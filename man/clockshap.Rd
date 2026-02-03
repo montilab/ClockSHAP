@@ -4,26 +4,23 @@
 \alias{clockshap}
 \title{ClockSHAP decomposition}
 \usage{
-clockshap(shap_values, age, reference_model)
+clockshap(features, age, clock, reference)
 }
 \arguments{
-\item{shap_values}{A numeric matrix or data.frame of SHAP values
+\item{features}{A matrix or data.frame of feature values
 (samples x features).}
 
-\item{age}{A numeric vector of chronological ages.}
+\item{age}{Numeric vector of chronological ages (length = nrow(features)).}
 
-\item{reference_model}{An object describing the expected age-feature
-relationship used for adjustment.}
+\item{clock}{A \code{linear_clock} object.}
+
+\item{reference}{A \code{reference_profile} object.}
 }
 \value{
-An object of class \code{clockshap}, containing adjusted feature
-contributions and metadata.
+An object of class \code{clockshap} containing per-feature contributions,
+deviation values, and metadata.
 }
 \description{
-Decompose biological age deviation into age-adjusted feature contributions.
-}
-\details{
-ClockSHAP interprets biological age predictions by conditioning feature
-attributions on chronological age, enabling interpretation of why a sample
-appears biologically older or younger than expected.
+Decompose biological age deviation into exact, age-conditioned feature
+contributions for a linear aging clock.
 }
