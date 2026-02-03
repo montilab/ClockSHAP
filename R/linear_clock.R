@@ -21,3 +21,20 @@
   class(clock) <- "linear_clock"
   clock
 }
+
+#' Create a linear aging clock
+#'
+#' Construct a linear aging clock specification from coefficients and
+#' preprocessing parameters. This does not train a model.
+#'
+#' @param alpha Numeric scalar intercept.
+#' @param beta Named numeric vector of feature coefficients.
+#' @param mu Named numeric vector of training-set feature means.
+#' @param sigma Named numeric vector of training-set feature standard deviations.
+#'
+#' @return An object of class `linear_clock`.
+#' @export
+linear_clock <- function(alpha, beta, mu, sigma) {
+  .make_linear_clock(alpha = alpha, beta = beta, mu = mu, sigma = sigma)
+}
+
