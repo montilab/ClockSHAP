@@ -1,0 +1,118 @@
+---
+title: "ClockSHAP Introduction"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{clockshap-introduction}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(ClockSHAP)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+## Introduction
+
+ClockSHAP is a method for interpreting *biological age deviation* produced by
+linear aging clocks.
+
+Rather than explaining which features increase or decrease a predicted age,
+ClockSHAP explains **why a sample appears biologically older or younger than
+expected for its chronological age**, relative to a reference aging trajectory.
+
+The method provides an exact, closed-form decomposition for linear models.
+
+---
+
+## Conceptual overview
+
+Consider a linear aging clock trained on reference data:
+
+\[
+\hat{y} = \alpha + \sum_k \beta_k \tilde{X}_k
+\]
+
+ClockSHAP defines deviation as:
+
+\[
+\Delta = \hat{y} - E[\hat{y} \mid \text{Age}]
+\]
+
+and decomposes this deviation into per-feature contributions:
+
+\[
+\phi_k = \beta_k \left( \tilde{X}_k - E[\tilde{X}_k \mid \text{Age}] \right)
+\]
+
+
+such that:
+
+\[
+\sum_k \phi_k = \Delta
+\]
+
+where \(\tilde{X}_k\) denotes features standardized using the clock’s training mean and standard deviation.
+
+This decomposition is exact for linear clocks.
+
+---
+
+## A minimal example
+
+This example uses synthetic data to demonstrate the full ClockSHAP workflow.
+
+```{r}
+set.seed(1)
+
+features <- matrix(rnorm(20), nrow = 5, ncol = 4)
+colnames(features) <- paste0("F", 1:4)
+
+age <- c(40, 50, 60, 70, 80)
+
+clock <- linear_clock(
+  alpha = 10,
+  beta  = setNames(runif(4), colnames(features)),
+  mu    = setNames(rep(0, 4), colnames(features)),
+  sigma = setNames(rep(1, 4), colnames(features))
+)
+
+reference <- fit_reference_profile(
+  features = as.data.frame(features),
+  age = age
+)
+
+cs <- clockshap(features, age, clock, reference)
+cs
+```
+
+## Inspecting results
+ClockSHAP returns a structured object with accessor functions.
+
+```{r}
+clockshap_deviation(cs)
+clockshap_phi(cs)
+```
+
+By construction, per-feature contributions sum to the total deviation for each
+sample.
+
+```{r}
+all.equal(rowSums(clockshap_phi(cs)), clockshap_deviation(cs), tolerance = 1e-10)
+```
+
+## Scope and assumptions
+ClockSHAP is defined for linear aging clocks and requires:
+
+- linear feature contributions
+- a reference age-feature relationship
+- consistent feature definitions between clock and reference
+
+The method does not train clocks or impose assumptions about the source of
+reference data. Any dataset may be used to define a reference aging trajectory.
+
