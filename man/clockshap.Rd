@@ -24,3 +24,28 @@ deviation values, and metadata.
 Decompose biological age deviation into exact, age-conditioned feature
 contributions for a linear aging clock.
 }
+\examples{
+set.seed(1)
+
+features <- matrix(rnorm(20), nrow = 5, ncol = 4)
+colnames(features) <- paste0("F", 1:4)
+age <- c(40, 50, 60, 70, 80)
+
+clock <- linear_clock(
+  alpha = 10,
+  beta  = setNames(runif(4), colnames(features)),
+  mu    = setNames(rep(0, 4), colnames(features)),
+  sigma = setNames(rep(1, 4), colnames(features))
+)
+
+ref <- fit_reference_profile(
+features = as.data.frame(features),
+age = age
+)
+
+cs <- clockshap(features, age, clock, ref)
+cs
+summary(cs)
+
+
+}

@@ -12,7 +12,32 @@
 #' @return An object of class `clockshap` containing per-feature contributions,
 #'   deviation values, and metadata.
 #'
+#' @examples
+#' set.seed(1)
+#'
+#' features <- matrix(rnorm(20), nrow = 5, ncol = 4)
+#' colnames(features) <- paste0("F", 1:4)
+#' age <- c(40, 50, 60, 70, 80)
+#'
+#' clock <- linear_clock(
+#'   alpha = 10,
+#'   beta  = setNames(runif(4), colnames(features)),
+#'   mu    = setNames(rep(0, 4), colnames(features)),
+#'   sigma = setNames(rep(1, 4), colnames(features))
+#' )
+#'
+#' ref <- fit_reference_profile(
+#' features = as.data.frame(features),
+#' age = age
+#' )
+#'
+#' cs <- clockshap(features, age, clock, ref)
+#' cs
+#' summary(cs)
+#'
+#'
 #' @export
+
 clockshap <- function(features, age, clock, reference) {
 
   ## ---------------------- validation ----------------------
@@ -43,9 +68,14 @@ clockshap <- function(features, age, clock, reference) {
     clock$mu,
     clock$sigma,
     reference$gamma0,
-    reference$gamma1,
-    colnames(features)
+    reference$gamma1
   )
+
+  if (!identical(names(clock$beta), colnames(features))) {
+    stop("Feature names in `features` must match clock and reference names.",
+         call. = FALSE)
+  }
+
 
   ## ---------------------- unpack objects ----------------------
 
