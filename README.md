@@ -1,6 +1,6 @@
 # ClockSHAP
 
-ClockSHAP is a statistical framework for interpreting biological age predictions by linear-additive aging clock models, by decomposing age deviation into age-adjusted feature contributions.
+ClockSHAP is a statistical framework for interpreting biological age predictions from linear-additive aging clock models, by decomposing age deviation into age-adjusted feature contributions.
 
 Rather than asking *which features increase or decrease predicted age*, ClockSHAP asks *why a sample appears biologically older or younger than expected for its chronological age*.
 
