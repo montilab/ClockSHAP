@@ -78,3 +78,33 @@ test_that("ClockSHAP returns a well-formed object", {
   expect_s3_class(cs, "clockshap")
   expect_named(cs, c("phi", "deviation", "predicted", "expected", "age"))
 })
+
+
+test_that("ClockSHAP returns zero deviation and zero contributions when features match the reference", {
+
+  age <- c(40, 40)
+
+  gamma0 <- c(X = 1,  Y = -2)
+  gamma1 <- c(X = 0.1, Y = 0.2)
+
+  features <- rbind(
+    gamma0 + gamma1 * age[1],
+    gamma0 + gamma1 * age[2]
+  )
+  colnames(features) <- names(gamma0)
+
+  clock <- linear_clock(
+    alpha = 0,
+    beta  = c(X = 1, Y = 1),
+    mu    = c(X = 0, Y = 0),
+    sigma = c(X = 1, Y = 1)
+  )
+
+  ref <- reference_profile(gamma0 = gamma0, gamma1 = gamma1)
+
+  cs <- clockshap(features, age, clock, ref)
+
+  expect_equal(cs$deviation, c(0, 0), tolerance = 1e-12)
+  expect_true(all(cs$phi == 0))
+})
+
