@@ -123,6 +123,78 @@ ClockSHAP then defines:
 
 This preserves the desirable SHAP property (exact additivity) while aligning the baseline with the biology of aging clocks.
 
+## Why ClockSHAP does not use “relative age acceleration” (RAA)
+
+Many aging-clock analyses define **age acceleration** as the difference between a clock’s predicted age and chronological age:
+
+\[
+\text{Age acceleration} = \hat{y} - \text{age}
+\]
+
+In practice, most clocks exhibit **regression-to-the-mean** / miscalibration (e.g., slope < 1), so this quantity can be **age-biased**:
+- younger individuals tend to be predicted *too old*
+- older individuals tend to be predicted *too young*
+
+To address this, it is common to compute **relative age acceleration (RAA)** by removing systematic age trends in predicted age, e.g. by fitting:
+
+\[
+\hat{y} = a + b\cdot \text{age} + \varepsilon
+\]
+
+and using the residuals (or an equivalent bias-corrected form) as the “relative” acceleration:
+
+\[
+\text{RAA} = \hat{\varepsilon}
+\]
+
+RAA is therefore a **post hoc calibration step** that makes \(\hat{y} - \text{age}\) more comparable across ages by correcting age-dependent prediction bias.
+
+### ClockSHAP’s alternative: deviation relative to an age-conditioned expectation
+
+ClockSHAP uses a different estimand. Rather than comparing predicted age to chronological age, ClockSHAP defines **deviation** as:
+
+\[
+\text{Deviation} = \hat{y} - E[\hat{y}\mid \text{age}]
+\]
+
+where \(E[\hat{y}\mid \text{age}]\) is the clock’s **average prediction** for reference individuals at the same chronological age (estimated from a user-supplied reference cohort).
+
+Because both **predicted** and **expected** ages are produced by the **same clock**, they inherit the same global age-dependent miscalibration (e.g., slope compression). As a result, systematic age bias cancels **by construction**:
+
+- if the clock tends to predict younger samples too old and older samples too young, that behavior is present in both \(\hat{y}\) and \(E[\hat{y}\mid \text{age}]\)
+- subtracting them removes this global age trend without requiring an additional RAA step
+
+In short: **ClockSHAP does not require RAA** because deviation is already an internally age-adjusted quantity.
+
+### Caveats and practical requirements
+
+ClockSHAP deviations should be interpreted as:
+
+> **relative deviation within a specific clock and reference context**, not an absolute measure of biological age.
+
+Key implications:
+
+- **“Years” are clock-relative, not absolute.**  
+  A deviation of +5 years under one clock is not guaranteed to be comparable to +5 years under a different clock, a different training procedure, or a different feature space.
+
+- **Reference population matters.**  
+  Expected age \(E[\hat{y}\mid \text{age}]\) is defined by your chosen reference cohort. For stable, interpretable deviations, the reference should:
+  - have a **sufficient age range** (and ideally substantial overlap with the age range of the samples of interest)
+  - be large enough to estimate a smooth age-conditioned expectation
+  - be biologically relevant to the intended comparison (e.g., tissue/context matched when appropriate)
+
+- **Preprocessing and harmonization must be done upstream.**  
+  ClockSHAP assumes the feature matrix is already “analysis-ready.” Users should handle *before* running ClockSHAP:
+  - feature preprocessing/normalization consistent with the clock (e.g., transformations, scaling/standardization inputs)
+  - feature-space harmonization (same features, same units/definitions, consistent ordering)
+  - batch effect correction / technical confounding control, where applicable
+  - missingness and QC filtering consistent across cohorts
+
+ClockSHAP is an interpretability framework: it explains deviations given a clock and a reference, but it does **not** attempt to fix calibration, batch, or distribution-shift issues internally. 
+Failure to address these upstream may lead to misleading results.
+
+For more discussion on the idea of relative-age-acceleration, potential issues of mismatched feature space/batch effects, and related topics, see [Epigenetic ageing clocks: statistical methods and emerging computational challenges](https://doi.org/10.1038/s41576-024-00807-w) and references therein.
+
 ## Status
 
 This package is under active development.
