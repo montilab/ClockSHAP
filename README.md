@@ -131,8 +131,8 @@ deviation = predicted - expected
 
 where `expected` is computed by applying the **same clock** to an **age-conditioned reference profile**.
 
-Why this often reduces age bias without an extra regression step:
-- if the clock tends to over-predict at younger ages and under-predict at older ages, that pattern appears in both `predicted` and `expected`
+Why this often removes age bias without an extra regression step:
+- if the clock tends to over-predict at younger ages and under-predict at older ages, that pattern appears in both `predicted` and `expected`, assuming upstream feature harmonization/ data normalization.
 - subtracting them removes this global age trend **by construction**
 
 Relationship to residual-based acceleration:
@@ -205,6 +205,7 @@ Accessors:
 - **Deviation is reference-dependent.** Your choice of reference cohort/profile defines what “expected for age” means.
 - **“Years” are clock-relative.** A deviation of +5 under one clock is not guaranteed comparable to +5 under a different clock, training set, or feature space.
 - **Upstream preprocessing matters.** ClockSHAP assumes the feature matrix is already analysis-ready and consistent with the clock (transformations, normalization, feature matching, batch correction, QC).
+The *importance of this step can not be overstated*!! Mismatching feature spaces, normalization steps, or batch effects can lead to technical rather than biological deviations. 
 
 For broader discussion of calibration, age bias, and computational challenges in clock analysis, see:
 
