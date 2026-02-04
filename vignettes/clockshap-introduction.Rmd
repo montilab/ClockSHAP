@@ -110,7 +110,7 @@ all.equal(rowSums(clockshap_phi(cs)), clockshap_deviation(cs), tolerance = 1e-10
 ## Waterfall visualization
 
 ```{r}
-plot_clockshap_waterfall(cs, sample = 1, top_n = 3)
+plot_clockshap_waterfall(cs, sample = 1, top_n = 3, show_age_labels = FALSE, show_delta_label = FALSE )
 ```
 
 ## Scope and assumptions
