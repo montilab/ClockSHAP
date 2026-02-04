@@ -4,7 +4,14 @@
 \alias{plot_clockshap_waterfall}
 \title{Plot ClockSHAP waterfall for a single sample}
 \usage{
-plot_clockshap_waterfall(x, sample, top_n = 10)
+plot_clockshap_waterfall(
+  x,
+  sample,
+  top_n = 10,
+  show_age_labels = TRUE,
+  show_delta_label = TRUE,
+  show_effect_labels = TRUE
+)
 }
 \arguments{
 \item{x}{A \code{clockshap} object.}
@@ -12,6 +19,12 @@ plot_clockshap_waterfall(x, sample, top_n = 10)
 \item{sample}{A sample index (integer) or row name (character).}
 
 \item{top_n}{Number of top absolute contributions to display.}
+
+\item{show_age_labels}{Logical; show the expected/predicted age text labels.}
+
+\item{show_delta_label}{Logical; show the Delta Age label above the arrow.}
+
+\item{show_effect_labels}{Logical; show the contribution values inside bars.}
 }
 \value{
 A ggplot object.

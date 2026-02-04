@@ -70,14 +70,14 @@ This example uses synthetic data to demonstrate the full ClockSHAP workflow.
 ```{r}
 set.seed(1)
 
-features <- matrix(rnorm(20), nrow = 5, ncol = 4)
+features <- matrix(rnorm(20, mean = 0, sd = 20), nrow = 5, ncol = 4)  # sd was 1 → now 20
 colnames(features) <- paste0("F", 1:4)
 
 age <- c(40, 50, 60, 70, 80)
 
 clock <- linear_clock(
   alpha = 10,
-  beta  = setNames(runif(4), colnames(features)),
+  beta  = setNames(runif(4, min = -2, max = 2), colnames(features)), # wider than 0..1
   mu    = setNames(rep(0, 4), colnames(features)),
   sigma = setNames(rep(1, 4), colnames(features))
 )
@@ -89,6 +89,7 @@ reference <- fit_reference_profile(
 
 cs <- clockshap(features, age, clock, reference)
 cs
+
 ```
 
 ## Inspecting results
@@ -109,7 +110,7 @@ all.equal(rowSums(clockshap_phi(cs)), clockshap_deviation(cs), tolerance = 1e-10
 ## Waterfall visualization
 
 ```{r}
-plot_clockshap_waterfall(cs, sample = 1)
+plot_clockshap_waterfall(cs, sample = 1, top_n = 3)
 ```
 
 ## Scope and assumptions

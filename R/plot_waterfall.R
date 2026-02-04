@@ -10,6 +10,9 @@
 #' @param x A `clockshap` object.
 #' @param sample A sample index (integer) or row name (character).
 #' @param top_n Number of top absolute contributions to display.
+#' @param show_age_labels Logical; show the expected/predicted age text labels.
+#' @param show_delta_label Logical; show the Delta Age label above the arrow.
+#' @param show_effect_labels Logical; show the contribution values inside bars.
 #'
 #' @return A ggplot object.
 #'
@@ -17,14 +20,22 @@
 #' @importFrom ggplot2 scale_y_continuous scale_x_continuous scale_color_manual
 #' @importFrom ggplot2 coord_cartesian theme_minimal theme labs
 #' @importFrom ggplot2 element_text element_blank margin expansion
-#' @importFrom dplyr arrange mutate
+#' @importFrom dplyr arrange mutate desc
 #' @importFrom tibble tibble
 #' @importFrom scales pretty_breaks
 #' @importFrom magrittr %>%
 #' @importFrom grid unit arrow
+#' @importFrom utils head
 #'
 #' @export
-plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
+plot_clockshap_waterfall <- function(
+    x,
+    sample,
+    top_n = 10,
+    show_age_labels = TRUE,
+    show_delta_label = TRUE,
+    show_effect_labels = TRUE
+) {
 
   ## ------------------------------------------------------------
   ## Validation
@@ -32,6 +43,11 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
   if (!inherits(x, "clockshap")) {
     stop("`x` must be a clockshap object.", call. = FALSE)
   }
+
+  if (!is.numeric(top_n) || length(top_n) != 1 || top_n < 1) {
+    stop("`top_n` must be a positive integer.", call. = FALSE)
+  }
+  top_n <- as.integer(top_n)
 
   phi <- clockshap_phi(x)
 
@@ -43,7 +59,7 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
     i <- match(sample, rownames(phi))
   } else {
     i <- as.integer(sample)
-    if (i < 1 || i > nrow(phi)) {
+    if (is.na(i) || i < 1 || i > nrow(phi)) {
       stop("Sample index out of bounds.", call. = FALSE)
     }
   }
@@ -111,16 +127,18 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
   )
 
   ## ------------------------------------------------------------
-  ## Plot
+  ## Plot (base layers)
   ## ------------------------------------------------------------
   p <- ggplot(wf_plot) +
 
     ## custom vertical grid lines
     geom_segment(
       data = data.frame(x = x_breaks),
-      aes(x = x, xend = x,
-          y = min(wf_plot$y) - 0.5,
-          yend = y_arrow),
+      aes(
+        x = x, xend = x,
+        y = min(wf_plot$y) - 0.5,
+        yend = y_arrow
+      ),
       inherit.aes = FALSE,
       colour = "grey92",
       linewidth = 0.4
@@ -128,9 +146,11 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
 
     ## expected age line
     geom_segment(
-      aes(x = exp_i, xend = exp_i,
-          y = min(wf_plot$y) - 0.5,
-          yend = y_arrow - 0.25),
+      aes(
+        x = exp_i, xend = exp_i,
+        y = min(wf_plot$y) - 0.5,
+        yend = y_arrow - 0.25
+      ),
       inherit.aes = FALSE,
       linetype = "dotted",
       colour = "grey50"
@@ -138,9 +158,11 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
 
     ## predicted age line
     geom_segment(
-      aes(x = pred_i, xend = pred_i,
-          y = min(wf_plot$y) - 0.5,
-          yend = y_arrow - 0.25),
+      aes(
+        x = pred_i, xend = pred_i,
+        y = min(wf_plot$y) - 0.5,
+        yend = y_arrow - 0.25
+      ),
       inherit.aes = FALSE,
       linetype = "dotted",
       colour = "grey50"
@@ -148,8 +170,7 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
 
     ## arrow connecting expected -> predicted
     geom_segment(
-      aes(x = exp_i, xend = pred_i,
-          y = y_arrow, yend = y_arrow),
+      aes(x = exp_i, xend = pred_i, y = y_arrow, yend = y_arrow),
       inherit.aes = FALSE,
       colour = "grey30",
       linewidth = 0.9,
@@ -160,43 +181,7 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
       )
     ) +
 
-    ## delta-age label
-    annotate(
-      "text",
-      x = (exp_i + pred_i) / 2,
-      y = y_label,
-      label = as.expression(
-        bquote(
-          Delta * "Age = " *
-            .(sprintf("%+.1f", delta_i)) * " yr"
-        )
-      ),
-      size = 4.5,
-      fontface = "bold",
-      colour = "grey20"
-    ) +
-
-    ## expected / predicted labels
-    annotate(
-      "text",
-      x = exp_i,
-      y = y_label,
-      label = sprintf("Expected Age\n%.1f yr", exp_i_r),
-      hjust = 0.5, vjust = 0,
-      size = 4,
-      colour = "grey20"
-    ) +
-    annotate(
-      "text",
-      x = pred_i,
-      y = y_label,
-      label = sprintf("Predicted Age\n%.1f yr", pred_i_r),
-      hjust = 0.5, vjust = 0,
-      size = 4,
-      colour = "grey20"
-    ) +
-
-    ## waterfall bars
+    ## waterfall bars (two layers: grey base + colored overlay)
     geom_segment(
       data = wf_plot,
       aes(x = Start, xend = End, y = y, yend = y),
@@ -206,19 +191,9 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
     ) +
     geom_segment(
       data = wf_plot,
-      aes(x = Start, xend = End, y = y, yend = y,
-          colour = fill_key),
+      aes(x = Start, xend = End, y = y, yend = y, colour = fill_key),
       linewidth = 7,
       lineend = "butt"
-    ) +
-
-    ## effect labels inside bars
-    geom_text(
-      data = wf_plot,
-      aes(x = Mid, y = y, label = sprintf("%+.1f", Eff)),
-      colour = "white",
-      size = 3.6,
-      fontface = "bold"
     ) +
 
     ## colors
@@ -249,17 +224,63 @@ plot_clockshap_waterfall <- function(x, sample, top_n = 10) {
     theme_minimal(base_size = 11) +
     theme(
       axis.text.x = element_text(size = 10),
-      axis.text.y = element_text(
-        size = 10,
-        face = "bold",
-        margin = margin(r = 2)
-      ),
+      axis.text.y = element_text(size = 10, face = "bold", margin = margin(r = 2)),
       panel.grid.major.x = element_blank(),
       panel.grid.minor.x = element_blank(),
       panel.grid.major.y = element_blank(),
       panel.grid.minor   = element_blank(),
       plot.margin        = margin(t = 10, r = 12, b = 8, l = 8)
     )
+
+  ## ------------------------------------------------------------
+  ## Optional annotation layers
+  ## ------------------------------------------------------------
+
+  if (isTRUE(show_delta_label)) {
+    p <- p + annotate(
+      "text",
+      x = (exp_i + pred_i) / 2,
+      y = y_label,
+      label = as.expression(
+        bquote(Delta * "Age = " * .(sprintf("%+.1f", delta_i)) * " yr")
+      ),
+      size = 4.5,
+      fontface = "bold",
+      colour = "grey20"
+    )
+  }
+
+  if (isTRUE(show_age_labels)) {
+    p <- p +
+      annotate(
+        "text",
+        x = exp_i,
+        y = y_label,
+        label = sprintf("Expected Age\n%.1f yr", exp_i_r),
+        hjust = 0.5, vjust = 0,
+        size = 4,
+        colour = "grey20"
+      ) +
+      annotate(
+        "text",
+        x = pred_i,
+        y = y_label,
+        label = sprintf("Predicted Age\n%.1f yr", pred_i_r),
+        hjust = 0.5, vjust = 0,
+        size = 4,
+        colour = "grey20"
+      )
+  }
+
+  if (isTRUE(show_effect_labels)) {
+    p <- p + geom_text(
+      data = wf_plot,
+      aes(x = Mid, y = y, label = sprintf("%+.1f", Eff)),
+      colour = "white",
+      size = 3.6,
+      fontface = "bold"
+    )
+  }
 
   return(p)
 }
