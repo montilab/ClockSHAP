@@ -106,6 +106,12 @@ sample.
 all.equal(rowSums(clockshap_phi(cs)), clockshap_deviation(cs), tolerance = 1e-10)
 ```
 
+## Waterfall visualization
+
+```{r}
+plot_clockshap_waterfall(cs, sample = 1)
+```
+
 ## Scope and assumptions
 ClockSHAP is defined for linear aging clocks and requires:
 
