@@ -39,13 +39,12 @@ clock <- linear_clock(
 )
 
 ref <- fit_reference_profile(
-features = as.data.frame(features),
-age = age
+  features = as.data.frame(features),
+  age = age
 )
 
 cs <- clockshap(features, age, clock, ref)
 cs
 summary(cs)
-
 
 }

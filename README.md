@@ -1,18 +1,18 @@
 # ClockSHAP
 
-ClockSHAP is an interpretation framework for **linear-additive aging clocks** (e.g., transcriptomic, epigenetic, proteomic clocks) that explains *why* a sample is predicted to be biologically older or younger than expected given its chronological age.
-
+ClockSHAP is an interpretation framework for *linear-additive aging clocks* (e.g., transcriptomic, epigenetic, or proteomic clocks fit using linear regression, ridge regression, elastic net, etc.) 
+that explains why a sample is predicted to be biologically older or younger than expected given its chronological age.
 The method was developed in the context of tissue-anchored transcriptomic aging clocks, but is designed to support comparative aging analyses across diverse clock contexts.
 
-Instead of asking:
+Traditional aging clocks typically answer the question:
 
-> “Which features increase or decrease predicted age?”
+> “Is this sample biologically older or younger than expected?”
 
-ClockSHAP asks:
+ClockSHAP goes one step further and asks:
 
-> “Which features make this sample *older or younger than expected for its age*?”
+> “*Why* is this sample predicted to be biologically older or younger than expected for its age?””
 
-It does this by decomposing **age deviation** (also called “delta age” or “age acceleration”; predicted − expected) into **age-adjusted, per-feature contributions** that add up exactly to the deviation.
+It does this by decomposing **age deviation** (also called “delta age” or “age acceleration”; predicted age − expected age) into **age-adjusted, per-feature contributions** that add up exactly to the deviation.
 
 ## What ClockSHAP returns
 

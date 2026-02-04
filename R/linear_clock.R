@@ -5,10 +5,20 @@
   .validate_named_numeric(mu, "mu")
   .validate_named_numeric(sigma, "sigma")
 
+  ## require same name set (order can differ)
   .validate_same_names(beta, mu, sigma)
 
-  if (!is.numeric(alpha) || length(alpha) != 1) {
-    stop("`alpha` must be a single numeric intercept.", call. = FALSE)
+  if (!is.numeric(alpha) || length(alpha) != 1 || !is.finite(alpha)) {
+    stop("`alpha` must be a single finite numeric intercept.", call. = FALSE)
+  }
+
+  ## align preprocessing vectors to beta order
+  feat_names <- names(beta)
+  mu    <- .reorder_named(mu, feat_names, name = "mu")
+  sigma <- .reorder_named(sigma, feat_names, name = "sigma")
+
+  if (any(sigma <= 0)) {
+    stop("All elements of `sigma` must be positive (non-zero).", call. = FALSE)
   }
 
   clock <- list(
@@ -37,4 +47,3 @@
 linear_clock <- function(alpha, beta, mu, sigma) {
   .make_linear_clock(alpha = alpha, beta = beta, mu = mu, sigma = sigma)
 }
-

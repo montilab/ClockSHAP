@@ -17,6 +17,18 @@
          call. = FALSE)
   }
 
+  if (anyNA(age)) {
+    stop("`age` must not contain missing values.", call. = FALSE)
+  }
+  if (anyNA(features)) {
+    stop("`features` must not contain missing values.", call. = FALSE)
+  }
+
+  ## Ensure feature names exist (required for alignment downstream)
+  if (is.null(colnames(features))) {
+    colnames(features) <- paste0("V", seq_len(ncol(features)))
+  }
+
   gamma0 <- gamma1 <- numeric(ncol(features))
 
   for (k in seq_len(ncol(features))) {
@@ -39,7 +51,13 @@
 .make_reference_profile <- function(gamma0, gamma1) {
   .validate_named_numeric(gamma0, "gamma0")
   .validate_named_numeric(gamma1, "gamma1")
+
+  ## require same name set (order can differ)
   .validate_same_names(gamma0, gamma1)
+
+  ## align gamma1 to gamma0 order
+  feat_names <- names(gamma0)
+  gamma1 <- .reorder_named(gamma1, feat_names, name = "gamma1")
 
   ref <- list(gamma0 = gamma0, gamma1 = gamma1)
   class(ref) <- "reference_profile"

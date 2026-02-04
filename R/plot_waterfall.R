@@ -141,7 +141,7 @@ plot_clockshap_waterfall <- function(
       ),
       inherit.aes = FALSE,
       colour = "grey92",
-      linewidth = 0.4
+      size = 0.4
     ) +
 
     ## expected age line
@@ -173,7 +173,7 @@ plot_clockshap_waterfall <- function(
       aes(x = exp_i, xend = pred_i, y = y_arrow, yend = y_arrow),
       inherit.aes = FALSE,
       colour = "grey30",
-      linewidth = 0.9,
+      size = 0.9,
       arrow = arrow(
         ends = "both",
         type = "closed",
@@ -185,14 +185,14 @@ plot_clockshap_waterfall <- function(
     geom_segment(
       data = wf_plot,
       aes(x = Start, xend = End, y = y, yend = y),
-      linewidth = 8.5,
+      size = 8.5,
       lineend = "butt",
       colour = "grey30"
     ) +
     geom_segment(
       data = wf_plot,
       aes(x = Start, xend = End, y = y, yend = y, colour = fill_key),
-      linewidth = 7,
+      size = 7,
       lineend = "butt"
     ) +
 

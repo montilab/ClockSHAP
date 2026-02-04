@@ -27,17 +27,15 @@
 #' )
 #'
 #' ref <- fit_reference_profile(
-#' features = as.data.frame(features),
-#' age = age
+#'   features = as.data.frame(features),
+#'   age = age
 #' )
 #'
 #' cs <- clockshap(features, age, clock, ref)
 #' cs
 #' summary(cs)
 #'
-#'
 #' @export
-
 clockshap <- function(features, age, clock, reference) {
 
   ## ---------------------- validation ----------------------
@@ -55,14 +53,27 @@ clockshap <- function(features, age, clock, reference) {
 
   features <- as.matrix(features)
 
-  if (!is.numeric(age)) {
-    stop("`age` must be numeric.", call. = FALSE)
-  }
-  if (nrow(features) != length(age)) {
-    stop("Length of `age` must match number of rows in `features`.",
+  if (is.null(colnames(features))) {
+    stop("`features` must have column names matching the clock features.",
          call. = FALSE)
   }
 
+  if (anyNA(features)) {
+    stop("`features` must not contain missing values.", call. = FALSE)
+  }
+
+  if (!is.numeric(age)) {
+    stop("`age` must be numeric.", call. = FALSE)
+  }
+  if (length(age) != nrow(features)) {
+    stop("Length of `age` must match number of rows in `features`.",
+         call. = FALSE)
+  }
+  if (anyNA(age)) {
+    stop("`age` must not contain missing values.", call. = FALSE)
+  }
+
+  ## require same feature-name set across clock and reference
   .validate_same_names(
     clock$beta,
     clock$mu,
@@ -71,21 +82,35 @@ clockshap <- function(features, age, clock, reference) {
     reference$gamma1
   )
 
-  if (!identical(names(clock$beta), colnames(features))) {
-    stop("Feature names in `features` must match clock and reference names.",
-         call. = FALSE)
+  ## ---------------------- align feature order ----------------------
+
+  feat_names <- names(clock$beta)
+
+  ## require exact match between features and clock names (order can differ)
+  if (!identical(sort(colnames(features)), sort(feat_names))) {
+    missing <- setdiff(feat_names, colnames(features))
+    extra   <- setdiff(colnames(features), feat_names)
+
+    msg <- "Feature names in `features` must match clock and reference names."
+    if (length(missing) > 0) {
+      msg <- paste0(msg, " Missing: ", paste(missing, collapse = ", "), ".")
+    }
+    if (length(extra) > 0) {
+      msg <- paste0(msg, " Extra: ", paste(extra, collapse = ", "), ".")
+    }
+    stop(msg, call. = FALSE)
   }
 
+  ## reorder to the clock's canonical feature order
+  features <- features[, feat_names, drop = FALSE]
 
-  ## ---------------------- unpack objects ----------------------
-
-  beta  <- clock$beta
-  mu    <- clock$mu
-  sigma <- clock$sigma
+  beta  <- .reorder_named(clock$beta,  feat_names, name = "clock$beta")
+  mu    <- .reorder_named(clock$mu,    feat_names, name = "clock$mu")
+  sigma <- .reorder_named(clock$sigma, feat_names, name = "clock$sigma")
   alpha <- clock$alpha
 
-  gamma0 <- reference$gamma0
-  gamma1 <- reference$gamma1
+  gamma0 <- .reorder_named(reference$gamma0, feat_names, name = "reference$gamma0")
+  gamma1 <- .reorder_named(reference$gamma1, feat_names, name = "reference$gamma1")
 
   ## ---------------------- standardize features ----------------------
 
@@ -101,7 +126,7 @@ clockshap <- function(features, age, clock, reference) {
     "*"
   )
   X_exp <- sweep(X_exp, 2, gamma0, "+")
-  colnames(X_exp) <- names(gamma0)
+  colnames(X_exp) <- feat_names
 
   X_exp_std <- sweep(X_exp, 2, mu, "-")
   X_exp_std <- sweep(X_exp_std, 2, sigma, "/")
