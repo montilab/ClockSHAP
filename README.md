@@ -32,8 +32,14 @@ If you want common alternatives, see **“Terminology”** below.
 ClockSHAP is currently distributed via GitHub.
 
 ```r
-# install.packages("pak")
-pak::pak("<org-or-user>/ClockSHAP")
+# Option 1 (recommended): pak
+install.packages("pak")
+pak::pak("montilab/ClockSHAP")
+
+# Option 2: remotes
+install.packages("remotes")
+remotes::install_github("montilab/ClockSHAP")
+
 ```
 
 ## Quick start
@@ -103,15 +109,15 @@ Interpretation:
 
 Below are three quantities that are often discussed together but are *not the same*.
 
-### 1) Delta age (predicted − chronological age)
+### 1) Absolute Age Acceleration / Delta age (predicted − chronological age)
 
 ```text
 delta_age = predicted - age
 ```
 
-This is simple, but it can be **age-biased** when the clock is miscalibrated (e.g., slope < 1).
+This is simple, but it can be **age-biased** (younger samples predicted older, older samples predicted younger) when the clock is imperfect (e.g., slope < 1).
 
-### 2) Residual age acceleration / “relative age acceleration” (RAA)
+### 2) Relative age acceleration (RAA)
 
 A common fix is to regress clock output on age in some cohort and use residuals:
 

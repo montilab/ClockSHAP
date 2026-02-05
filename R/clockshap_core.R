@@ -141,13 +141,15 @@ clockshap <- function(features, age, clock, reference) {
   y_exp <- alpha + as.numeric(X_exp_std %*% beta)
   delta <- y_hat - y_exp
 
+
   ## ---------------------- invariant check ----------------------
 
   sum_phi <- rowSums(phi)
-  if (!isTRUE(all.equal(sum_phi, delta, tol = 1e-10))) {
+  if (!isTRUE(all.equal(unname(sum_phi), unname(delta), tolerance = 1e-10))) {
     stop("ClockSHAP invariant violated: sum(phi) != deviation.",
          call. = FALSE)
   }
+
 
   ## ---------------------- return object ----------------------
 
