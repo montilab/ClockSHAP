@@ -123,10 +123,10 @@ AAA = y_hat - age
 
 This is simple, but it can be **age-biased** when the clock has regression-to-the-mean (e.g., slope < 1), leading to younger samples being over-predicted and older samples under-predicted.
 
-NOTE: AAA is sometimes referred to as delta(Δ) Age; we use AAA here for parallelism with RAA.
+NOTE: AAA is sometimes referred to as ΔAge; we use AAA here for parallelism with RAA.
 
 
-### 2) Relative age acceleration (RAA; regression residuals)
+### 2) Residual age acceleration (RAA; regression residuals)
 
 A common fix is to regress clock output on age in a chosen cohort and use residuals:
 
@@ -169,14 +169,14 @@ Key invariant (per sample i):
 sum_k phi_i[k] = deviation_i
 ```
 
-where `y_exp(age)` (stored as `expected`) is computed by applying the *same clock* to an **age-conditioned reference profile** (see “How expected is defined”).
+where `y_exp(age)` (stored as `expected`) is computed by applying the *same clock* to an **age-conditioned reference profile** (see “How expected is defined” below).
 
 #### Why this can reduce age bias without an extra regression step
 
 - `deviation = y_hat − y_exp(age)` subtracts an **age-matched baseline** instead of subtracting chronological age directly. This avoids the classic regression-to-the-mean artifact that makes `AAA = y_hat − age` systematically positive at young ages and negative at old ages when the clock slope is < 1.
 - In practice, this helps when `y_exp(age)` tracks the **typical clock output at that age** in the reference setting (i.e., it behaves like an age-conditional expectation for the reference). If cross-cohort effects or biology cause the clock’s age-trend to differ strongly between the reference and the target, `deviation` may still show residual age trends (which should be interpreted as reference mismatch and/or biological decoupling, depending on context).
 
-#### Relationship to relative age acceleration (RAA)
+#### Relationship to residual-based age acceleration (RAA)
 
 - RAA is often defined as residuals from `lm(y_hat ~ age)` in some cohort. ClockSHAP’s `deviation` is similar in spirit: it measures how far a sample’s clock output lies above/below the **age-conditional expectation**, except that ClockSHAP defines that expectation through a **feature-level reference profile** rather than a regression on `y_hat`.
 - Because of this difference in how the expectation is constructed, `deviation` and regression residuals are not guaranteed to match in all settings. They will be numerically close when `y_exp(age)` closely approximates the cohort’s age-conditional mean clock output.
@@ -234,26 +234,32 @@ sum_k phi[k](age) = deviation
 
 This preserves exact additivity while making the baseline biologically appropriate for aging-clock interpretation.
 
-**API mapping:** `phi` is returned by `clockshap_phi(cs)`, and `gamma0/gamma1` are stored in the fitted `reference_profile` returned by `fit_reference_profile()`.
+**Implementation note:** `phi` is computed relative to the age-conditioned baseline defined by the reference profile (`gamma0/gamma1`). Changing the reference changes `expected(age)` and therefore changes the decomposition target (`deviation`).
 
-Note: `phi` values are defined relative to the age-conditioned baseline (via `gamma0/gamma1`); changing the reference changes the decomposition target.
+**Practical access:** `clockshap()` returns a `clockshap` object (a list). You can access fields directly (e.g., `cs$phi`, `cs$deviation`). Optional accessors can be provided for API stability across versions.
 
 
 ## What ClockSHAP returns
 
-For each sample:
+`clockshap()` returns a `clockshap` object (a list) with:
 
-- `predicted`: clock predicted age
-- `expected`: clock expected age at the same chronological age (from the reference profile)
+- `predicted`: clock predicted age (`y_hat`)
+- `expected`: expected predicted age at the same chronological age under the reference (`y_exp(age)`)
 - `deviation`: `predicted - expected` (age-matched deviation)
 - `phi`: per-feature contributions that sum to `deviation`
+- `age`: the input chronological age vector
 
-Accessors:
+Direct access (recommended for most users):
 
-- `clockshap_predicted(cs)`
-- `clockshap_expected(cs)`
-- `clockshap_deviation(cs)`
-- `clockshap_phi(cs)`
+```r
+cs <- clockshap(features, age, clock, reference)
+
+cs$phi
+cs$deviation
+cs$predicted
+cs$expected
+cs$age
+```
 
 ## Practical notes
 
