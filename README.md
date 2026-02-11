@@ -123,10 +123,10 @@ AAA = y_hat - age
 
 This is simple, but it can be **age-biased** when the clock has regression-to-the-mean (e.g., slope < 1), leading to younger samples being over-predicted and older samples under-predicted.
 
-NOTE: AAA is sometimes referred to as ΔAge; we use AAA here for parallelism with RAA.
+NOTE: AAA is sometimes referred to as delta(Δ) Age; we use AAA here for parallelism with RAA.
 
 
-### 2) Residual age acceleration (RAA; regression residuals)
+### 2) Relative age acceleration (RAA; regression residuals)
 
 A common fix is to regress clock output on age in a chosen cohort and use residuals:
 
@@ -169,7 +169,7 @@ Key invariant (per sample i):
 sum_k phi_i[k] = deviation_i
 ```
 
-where `y_exp(age)` (stored as `expected`) is computed by applying the *same clock* to an **age-conditioned reference profile** (see “How expected is defined” below).
+where `y_exp(age)` (stored as `expected`) is computed by applying the *same clock* to an **age-conditioned reference profile** (see “How expected is defined”).
 
 #### Why this can reduce age bias without an extra regression step
 
