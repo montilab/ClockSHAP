@@ -453,7 +453,21 @@ test_that("plot_clockshap_waterfall returns a ggplot object", {
 
   p1 <- plot_clockshap_waterfall(cs, sample = 1, top_n = 3)
   p2 <- plot_clockshap_waterfall(cs, sample = "S1", top_n = 3)
+  p3 <- plot_clockshap_waterfall(
+    cs,
+    sample = 1,
+    top_n = 3,
+    x_axis_title = "Clock Age",
+    y_axis_title = "Features",
+    deviation_label_fmt = "Dev = %+.1f years",
+    expected_age_label_fmt = "Expected\\n%.1f years",
+    predicted_age_label_fmt = "Predicted\\n%.1f years",
+    effect_label_fmt = "%+.2f"
+  )
 
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
+  expect_s3_class(p3, "ggplot")
+  expect_no_warning(print(p1))
+  expect_no_warning(print(p2))
 })

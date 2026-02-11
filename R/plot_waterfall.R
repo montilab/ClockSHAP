@@ -11,8 +11,19 @@
 #' @param sample A sample index (integer) or row name (character).
 #' @param top_n Number of top absolute contributions to display.
 #' @param show_age_labels Logical; show the expected/predicted age text labels.
-#' @param show_delta_label Logical; show the Delta Age label above the arrow.
+#' @param show_delta_label Logical; show the deviation label above the arrow.
 #' @param show_effect_labels Logical; show the contribution values inside bars.
+#' @param x_axis_title Character scalar for the x-axis title.
+#' @param y_axis_title Character scalar for the y-axis title. Use `NULL` for no
+#'   title.
+#' @param deviation_label_fmt `sprintf()` format string for the deviation
+#'   annotation text.
+#' @param expected_age_label_fmt `sprintf()` format string for the expected age
+#'   annotation text.
+#' @param predicted_age_label_fmt `sprintf()` format string for the predicted
+#'   age annotation text.
+#' @param effect_label_fmt `sprintf()` format string for effect labels shown
+#'   inside bars.
 #'
 #' @return A ggplot object.
 #'
@@ -34,7 +45,13 @@ plot_clockshap_waterfall <- function(
     top_n = 10,
     show_age_labels = TRUE,
     show_delta_label = TRUE,
-    show_effect_labels = TRUE
+    show_effect_labels = TRUE,
+    x_axis_title = "Age (years)",
+    y_axis_title = NULL,
+    deviation_label_fmt = "Deviation = %+.1f yr",
+    expected_age_label_fmt = "Expected Age\n%.1f yr",
+    predicted_age_label_fmt = "Predicted Age\n%.1f yr",
+    effect_label_fmt = "%+.1f"
 ) {
 
   ## ------------------------------------------------------------
@@ -48,6 +65,32 @@ plot_clockshap_waterfall <- function(
     stop("`top_n` must be a positive integer.", call. = FALSE)
   }
   top_n <- as.integer(top_n)
+  if (!is.character(x_axis_title) || length(x_axis_title) != 1) {
+    stop("`x_axis_title` must be a single character string.", call. = FALSE)
+  }
+  if (!is.null(y_axis_title) &&
+      (!is.character(y_axis_title) || length(y_axis_title) != 1)) {
+    stop("`y_axis_title` must be NULL or a single character string.",
+         call. = FALSE)
+  }
+  if (!is.character(deviation_label_fmt) || length(deviation_label_fmt) != 1) {
+    stop("`deviation_label_fmt` must be a single character string.",
+         call. = FALSE)
+  }
+  if (!is.character(expected_age_label_fmt) ||
+      length(expected_age_label_fmt) != 1) {
+    stop("`expected_age_label_fmt` must be a single character string.",
+         call. = FALSE)
+  }
+  if (!is.character(predicted_age_label_fmt) ||
+      length(predicted_age_label_fmt) != 1) {
+    stop("`predicted_age_label_fmt` must be a single character string.",
+         call. = FALSE)
+  }
+  if (!is.character(effect_label_fmt) || length(effect_label_fmt) != 1) {
+    stop("`effect_label_fmt` must be a single character string.",
+         call. = FALSE)
+  }
 
   phi <- clockshap_phi(x)
 
@@ -80,6 +123,10 @@ plot_clockshap_waterfall <- function(
   ## ------------------------------------------------------------
   exp_i  <- clockshap_expected(x)[i]
   pred_i <- clockshap_predicted(x)[i]
+  if (!is.finite(exp_i) || !is.finite(pred_i)) {
+    stop("Selected sample has non-finite expected or predicted age; cannot plot.",
+         call. = FALSE)
+  }
 
   exp_i_r  <- round(exp_i, 1)
   pred_i_r <- round(pred_i, 1)
@@ -112,6 +159,8 @@ plot_clockshap_waterfall <- function(
     )
 
   ## vertical positioning
+  y_min <- min(wf_plot$y)
+  y_base <- y_min - 0.5
   y_arrow <- max(wf_plot$y) + 1.2
   y_label <- y_arrow + 0.8
 
@@ -119,12 +168,17 @@ plot_clockshap_waterfall <- function(
   x_min <- min(c(wf_plot$Start, wf_plot$End, exp_i, pred_i), na.rm = TRUE)
   x_max <- max(c(wf_plot$Start, wf_plot$End, exp_i, pred_i), na.rm = TRUE)
 
-  x_pad_left  <- 0.04 * (x_max - x_min)
-  x_pad_right <- 0.08 * (x_max - x_min)
+  x_span <- x_max - x_min
+  if (!is.finite(x_span) || x_span <= 0) {
+    x_span <- 1
+  }
+  x_pad_left  <- 0.04 * x_span
+  x_pad_right <- 0.08 * x_span
 
   x_breaks <- pretty_breaks(n = 6)(
     c(x_min - x_pad_left, x_max + x_pad_right)
   )
+  y_upper <- y_label + 0.2
 
   ## ------------------------------------------------------------
   ## Plot (base layers)
@@ -133,11 +187,15 @@ plot_clockshap_waterfall <- function(
 
     ## custom vertical grid lines
     geom_segment(
-      data = data.frame(x = x_breaks),
-      aes(
-        x = x, xend = x,
-        y = min(wf_plot$y) - 0.5,
+      data = data.frame(
+        x = x_breaks,
+        xend = x_breaks,
+        y = y_base,
         yend = y_arrow
+      ),
+      aes(
+        x = x, xend = xend,
+        y = y, yend = yend
       ),
       inherit.aes = FALSE,
       colour = "grey92",
@@ -145,33 +203,27 @@ plot_clockshap_waterfall <- function(
     ) +
 
     ## expected age line
-    geom_segment(
-      aes(
-        x = exp_i, xend = exp_i,
-        y = min(wf_plot$y) - 0.5,
-        yend = y_arrow - 0.25
-      ),
-      inherit.aes = FALSE,
+    annotate(
+      "segment",
+      x = exp_i, xend = exp_i,
+      y = y_base, yend = y_arrow - 0.25,
       linetype = "dotted",
       colour = "grey50"
     ) +
 
     ## predicted age line
-    geom_segment(
-      aes(
-        x = pred_i, xend = pred_i,
-        y = min(wf_plot$y) - 0.5,
-        yend = y_arrow - 0.25
-      ),
-      inherit.aes = FALSE,
+    annotate(
+      "segment",
+      x = pred_i, xend = pred_i,
+      y = y_base, yend = y_arrow - 0.25,
       linetype = "dotted",
       colour = "grey50"
     ) +
 
     ## arrow connecting expected -> predicted
-    geom_segment(
-      aes(x = exp_i, xend = pred_i, y = y_arrow, yend = y_arrow),
-      inherit.aes = FALSE,
+    annotate(
+      "segment",
+      x = exp_i, xend = pred_i, y = y_arrow, yend = y_arrow,
       colour = "grey30",
       size = 0.9,
       arrow = arrow(
@@ -211,14 +263,15 @@ plot_clockshap_waterfall <- function(
     scale_y_continuous(
       breaks = wf_plot$y,
       labels = wf_plot$Feature,
-      expand = expansion(mult = c(0.05, 0.18))
+      limits = c(y_base, y_upper),
+      expand = expansion(mult = c(0, 0))
     ) +
     scale_x_continuous(
       limits = c(x_min - x_pad_left, x_max + x_pad_right),
       breaks = x_breaks
     ) +
 
-    labs(x = "Age (years)", y = NULL) +
+    labs(x = x_axis_title, y = y_axis_title) +
     coord_cartesian(clip = "off") +
 
     theme_minimal(base_size = 11) +
@@ -241,9 +294,7 @@ plot_clockshap_waterfall <- function(
       "text",
       x = (exp_i + pred_i) / 2,
       y = y_label,
-      label = as.expression(
-        bquote(Delta * "Age = " * .(sprintf("%+.1f", delta_i)) * " yr")
-      ),
+      label = sprintf(deviation_label_fmt, delta_i),
       size = 4.5,
       fontface = "bold",
       colour = "grey20"
@@ -256,7 +307,7 @@ plot_clockshap_waterfall <- function(
         "text",
         x = exp_i,
         y = y_label,
-        label = sprintf("Expected Age\n%.1f yr", exp_i_r),
+        label = sprintf(expected_age_label_fmt, exp_i_r),
         hjust = 0.5, vjust = 0,
         size = 4,
         colour = "grey20"
@@ -265,7 +316,7 @@ plot_clockshap_waterfall <- function(
         "text",
         x = pred_i,
         y = y_label,
-        label = sprintf("Predicted Age\n%.1f yr", pred_i_r),
+        label = sprintf(predicted_age_label_fmt, pred_i_r),
         hjust = 0.5, vjust = 0,
         size = 4,
         colour = "grey20"
@@ -275,7 +326,7 @@ plot_clockshap_waterfall <- function(
   if (isTRUE(show_effect_labels)) {
     p <- p + geom_text(
       data = wf_plot,
-      aes(x = Mid, y = y, label = sprintf("%+.1f", Eff)),
+      aes(x = Mid, y = y, label = sprintf(effect_label_fmt, Eff)),
       colour = "white",
       size = 3.6,
       fontface = "bold"
