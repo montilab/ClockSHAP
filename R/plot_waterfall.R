@@ -161,6 +161,15 @@ plot_clockshap_waterfall <- function(
       fill_key = interaction(Sign, IsOther)
     )
 
+  if (!isTRUE(all.equal(
+    unname(wf_plot$Eff),
+    unname(wf_plot$End - wf_plot$Start),
+    tolerance = 1e-12
+  ))) {
+    stop("Waterfall invariant violated: bar effects do not match bar lengths.",
+         call. = FALSE)
+  }
+
   ## vertical positioning
   y_min <- min(wf_plot$y)
   y_max <- max(wf_plot$y)
@@ -204,7 +213,7 @@ plot_clockshap_waterfall <- function(
       ),
       inherit.aes = FALSE,
       colour = "grey92",
-      size = 0.4
+      linewidth = 0.4
     ) +
 
     ## expected age line
@@ -230,7 +239,7 @@ plot_clockshap_waterfall <- function(
       "segment",
       x = exp_i, xend = pred_i, y = y_arrow, yend = y_arrow,
       colour = "grey30",
-      size = 0.9,
+      linewidth = 0.9,
       arrow = arrow(
         ends = "both",
         type = "closed",
@@ -242,14 +251,14 @@ plot_clockshap_waterfall <- function(
     geom_segment(
       data = wf_plot,
       aes(x = Start, xend = End, y = y, yend = y),
-      size = 8.5,
+      linewidth = 8.5,
       lineend = "butt",
       colour = "grey30"
     ) +
     geom_segment(
       data = wf_plot,
       aes(x = Start, xend = End, y = y, yend = y, colour = fill_key),
-      size = 7,
+      linewidth = 7,
       lineend = "butt"
     ) +
 
@@ -330,10 +339,17 @@ plot_clockshap_waterfall <- function(
   }
 
   if (isTRUE(show_effect_labels)) {
+    eff_values <- sprintf("%+.1f", wf_plot$Eff)
+    eff_labels <- vapply(
+      eff_values,
+      function(v) sub("{value}", v, effect_label, fixed = TRUE),
+      character(1)
+    )
+
     p <- p + geom_text(
       data = wf_plot,
       aes(x = Mid, y = y),
-      label = sub("{value}", sprintf("%+.1f", wf_plot$Eff), effect_label, fixed = TRUE),
+      label = eff_labels,
       colour = "white",
       size = 3.6,
       fontface = "bold"
