@@ -10,7 +10,13 @@ plot_clockshap_waterfall(
   top_n = 10,
   show_age_labels = TRUE,
   show_delta_label = TRUE,
-  show_effect_labels = TRUE
+  show_effect_labels = TRUE,
+  x_axis_title = "Age (years)",
+  y_axis_title = NULL,
+  deviation_label_fmt = "Deviation = %+.1f yr",
+  expected_age_label_fmt = "Expected Age\\n%.1f yr",
+  predicted_age_label_fmt = "Predicted Age\\n%.1f yr",
+  effect_label_fmt = "%+.1f"
 )
 }
 \arguments{
@@ -22,9 +28,26 @@ plot_clockshap_waterfall(
 
 \item{show_age_labels}{Logical; show the expected/predicted age text labels.}
 
-\item{show_delta_label}{Logical; show the Delta Age label above the arrow.}
+\item{show_delta_label}{Logical; show the deviation label above the arrow.}
 
 \item{show_effect_labels}{Logical; show the contribution values inside bars.}
+
+\item{x_axis_title}{Character scalar for the x-axis title.}
+
+\item{y_axis_title}{Character scalar for the y-axis title. Use \code{NULL} for no
+title.}
+
+\item{deviation_label_fmt}{\code{sprintf()} format string for the deviation
+annotation text.}
+
+\item{expected_age_label_fmt}{\code{sprintf()} format string for the expected age
+annotation text.}
+
+\item{predicted_age_label_fmt}{\code{sprintf()} format string for the predicted
+age annotation text.}
+
+\item{effect_label_fmt}{\code{sprintf()} format string for effect labels shown
+inside bars.}
 }
 \value{
 A ggplot object.
