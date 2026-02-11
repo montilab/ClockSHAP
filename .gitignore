@@ -1,7 +1,21 @@
-.Rproj.user
+# R / RStudio user files
+.Rproj.user/
 .Rhistory
 .RData
+.Ruserdata
+
+# R package build/check artifacts
+*.tar.gz
+*.Rcheck/
+.Rcheck/
+..Rcheck/
+
+# Vignette build outputs
+inst/doc/
+vignettes/*.html
+vignettes/*.pdf
+
+# Misc local files
 .httr-oauth
 .DS_Store
-.quarto
-inst/doc
+.quarto/
