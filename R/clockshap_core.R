@@ -8,6 +8,9 @@
 #' @param age Numeric vector of chronological ages (length = nrow(features)).
 #' @param clock A `linear_clock` object.
 #' @param reference A `reference_profile` object.
+#' @param max_age Optional numeric scalar. Samples with `age > max_age` are
+#'   treated as out of reference range and return `NA` for `expected`,
+#'   `deviation`, and `phi`.
 #'
 #' @return An object of class `clockshap` containing per-feature contributions,
 #'   deviation values, and metadata.
@@ -36,7 +39,7 @@
 #' summary(cs)
 #'
 #' @export
-clockshap <- function(features, age, clock, reference) {
+clockshap <- function(features, age, clock, reference, max_age = NULL) {
 
   ## ---------------------- validation ----------------------
 
@@ -71,6 +74,12 @@ clockshap <- function(features, age, clock, reference) {
   }
   if (anyNA(age)) {
     stop("`age` must not contain missing values.", call. = FALSE)
+  }
+  if (!is.null(max_age)) {
+    if (!is.numeric(max_age) || length(max_age) != 1 || !is.finite(max_age)) {
+      stop("`max_age` must be NULL or a single finite numeric value.",
+           call. = FALSE)
+    }
   }
 
   ## require same feature-name set across clock and reference
@@ -118,11 +127,17 @@ clockshap <- function(features, age, clock, reference) {
   X_std <- sweep(X_std, 2, sigma, "/")
 
   ## ---------------------- expected features at age ----------------------
+  valid_ref <- rep(TRUE, length(age))
+  age_ref <- age
+  if (!is.null(max_age)) {
+    valid_ref <- age <= max_age
+    age_ref <- pmin(age, max_age)
+  }
 
   X_exp <- sweep(
     matrix(gamma1, nrow = nrow(features), ncol = length(gamma1), byrow = TRUE),
     1,
-    age,
+    age_ref,
     "*"
   )
   X_exp <- sweep(X_exp, 2, gamma0, "+")
@@ -141,13 +156,25 @@ clockshap <- function(features, age, clock, reference) {
   y_exp <- alpha + as.numeric(X_exp_std %*% beta)
   delta <- y_hat - y_exp
 
+  if (!all(valid_ref)) {
+    y_exp[!valid_ref] <- NA_real_
+    delta[!valid_ref] <- NA_real_
+    phi[!valid_ref, ] <- NA_real_
+  }
+
 
   ## ---------------------- invariant check ----------------------
 
-  sum_phi <- rowSums(phi)
-  if (!isTRUE(all.equal(unname(sum_phi), unname(delta), tolerance = 1e-10))) {
-    stop("ClockSHAP invariant violated: sum(phi) != deviation.",
-         call. = FALSE)
+  if (any(valid_ref)) {
+    sum_phi <- rowSums(phi[valid_ref, , drop = FALSE])
+    if (!isTRUE(all.equal(
+      unname(sum_phi),
+      unname(delta[valid_ref]),
+      tolerance = 1e-10
+    ))) {
+      stop("ClockSHAP invariant violated: sum(phi) != deviation.",
+           call. = FALSE)
+    }
   }
 
 

@@ -4,7 +4,7 @@
 \alias{clockshap}
 \title{ClockSHAP decomposition}
 \usage{
-clockshap(features, age, clock, reference)
+clockshap(features, age, clock, reference, max_age = NULL)
 }
 \arguments{
 \item{features}{A matrix or data.frame of feature values
@@ -15,6 +15,10 @@ clockshap(features, age, clock, reference)
 \item{clock}{A \code{linear_clock} object.}
 
 \item{reference}{A \code{reference_profile} object.}
+
+\item{max_age}{Optional numeric scalar. Samples with \code{age > max_age} are
+treated as out of reference range and return \code{NA} for \code{expected},
+\code{deviation}, and \code{phi}.}
 }
 \value{
 An object of class \code{clockshap} containing per-feature contributions,

@@ -233,6 +233,76 @@ test_that("ClockSHAP errors on NA feature values (explicitly enforce complete ca
 })
 
 
+test_that("max_age marks out-of-range samples as NA in reference-based outputs", {
+
+  features <- matrix(
+    c(
+      0.0,  1.0,
+      0.5, -0.5,
+      1.0,  0.0
+    ),
+    nrow = 3,
+    byrow = TRUE
+  )
+  colnames(features) <- c("A", "B")
+  age <- c(60, 75, 90)
+
+  clock <- linear_clock(
+    alpha = 5,
+    beta  = c(A = 0.2, B = -0.1),
+    mu    = c(A = 0, B = 0),
+    sigma = c(A = 1, B = 1)
+  )
+
+  ref <- reference_profile(
+    gamma0 = c(A = 0.0, B = 0.0),
+    gamma1 = c(A = 0.01, B = 0.02)
+  )
+
+  cs_full <- clockshap(features, age, clock, ref)
+  cs_cap  <- clockshap(features, age, clock, ref, max_age = 80)
+
+  # Predicted is independent of reference age handling.
+  expect_equal(cs_cap$predicted, cs_full$predicted, tolerance = 1e-12)
+
+  # In-range rows stay finite and keep exact additivity.
+  expect_false(anyNA(cs_cap$expected[1:2]))
+  expect_false(anyNA(cs_cap$deviation[1:2]))
+  expect_false(anyNA(cs_cap$phi[1:2, ]))
+  expect_equal(rowSums(cs_cap$phi[1:2, , drop = FALSE]),
+               cs_cap$deviation[1:2], tolerance = 1e-12)
+
+  # Out-of-range rows are NA for reference-based outputs.
+  expect_true(is.na(cs_cap$expected[3]))
+  expect_true(is.na(cs_cap$deviation[3]))
+  expect_true(all(is.na(cs_cap$phi[3, ])))
+})
+
+
+test_that("clockshap validates max_age", {
+
+  features <- matrix(rnorm(8), nrow = 4, ncol = 2)
+  colnames(features) <- c("A", "B")
+  age <- c(30, 40, 50, 60)
+
+  clock <- linear_clock(
+    alpha = 0,
+    beta  = c(A = 1, B = 1),
+    mu    = c(A = 0, B = 0),
+    sigma = c(A = 1, B = 1)
+  )
+
+  ref <- reference_profile(
+    gamma0 = c(A = 0, B = 0),
+    gamma1 = c(A = 0, B = 0)
+  )
+
+  expect_error(clockshap(features, age, clock, ref, max_age = NA_real_))
+  expect_error(clockshap(features, age, clock, ref, max_age = c(70, 80)))
+  expect_error(clockshap(features, age, clock, ref, max_age = "80"))
+})
+
+
 test_that("linear_clock errors when sigma has zeros", {
 
   expect_error(
