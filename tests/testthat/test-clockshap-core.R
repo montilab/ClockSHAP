@@ -471,3 +471,58 @@ test_that("plot_clockshap_waterfall returns a ggplot object", {
   expect_no_warning(print(p1))
   expect_no_warning(print(p2))
 })
+
+
+test_that("waterfall effect labels match per-bar effects", {
+
+  skip_if_not_installed("ggplot2")
+
+  features <- matrix(
+    c(
+      1, 2, 3, 4,
+      0, 0, 0, 0,
+      0, 0, 0, 0
+    ),
+    nrow = 3,
+    byrow = TRUE
+  )
+  colnames(features) <- paste0("F", 1:4)
+  age <- c(40, 50, 60)
+
+  clock <- linear_clock(
+    alpha = 0,
+    beta  = c(F1 = 1, F2 = 2, F3 = 3, F4 = 4),
+    mu    = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0),
+    sigma = c(F1 = 1, F2 = 1, F3 = 1, F4 = 1)
+  )
+
+  ref <- reference_profile(
+    gamma0 = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0),
+    gamma1 = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0)
+  )
+
+  cs <- clockshap(features, age, clock, ref)
+
+  p <- plot_clockshap_waterfall(
+    cs,
+    sample = 1,
+    top_n = 3,
+    show_age_labels = FALSE,
+    show_delta_label = FALSE,
+    effect_label = "phi={value}"
+  )
+
+  phi_all <- clockshap_phi(cs)[1, ]
+  phi_all <- phi_all[order(-abs(phi_all))]
+  top_eff <- utils::head(phi_all, 3)
+  effects <- c(top_eff, Other = sum(phi_all) - sum(top_eff))
+  expected_labels <- paste0("phi=", sprintf("%+.1f", effects))
+
+  text_layer_idx <- which(
+    vapply(p$layers, function(layer) inherits(layer$geom, "GeomText"), logical(1))
+  )
+  expect_equal(length(text_layer_idx), 1)
+
+  built <- ggplot2::ggplot_build(p)
+  expect_equal(as.character(built$data[[text_layer_idx]]$label), unname(expected_labels))
+})
