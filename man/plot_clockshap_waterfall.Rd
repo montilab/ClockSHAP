@@ -13,10 +13,10 @@ plot_clockshap_waterfall(
   show_effect_labels = TRUE,
   x_axis_title = "Age (years)",
   y_axis_title = NULL,
-  deviation_label_fmt = "Deviation = %+.1f yr",
-  expected_age_label_fmt = "Expected Age\\n%.1f yr",
-  predicted_age_label_fmt = "Predicted Age\\n%.1f yr",
-  effect_label_fmt = "%+.1f"
+  deviation_label = "Deviation = {value} yr",
+  expected_age_label = "Expected Age\\n{value} yr",
+  predicted_age_label = "Predicted Age\\n{value} yr",
+  effect_label = "{value}"
 )
 }
 \arguments{
@@ -37,17 +37,17 @@ plot_clockshap_waterfall(
 \item{y_axis_title}{Character scalar for the y-axis title. Use \code{NULL} for no
 title.}
 
-\item{deviation_label_fmt}{\code{sprintf()} format string for the deviation
-annotation text.}
+\item{deviation_label}{Text template for the deviation annotation. Use
+\code{{value}} as a placeholder for the numeric value.}
 
-\item{expected_age_label_fmt}{\code{sprintf()} format string for the expected age
-annotation text.}
+\item{expected_age_label}{Text template for the expected age annotation. Use
+\code{{value}} as a placeholder for the numeric value.}
 
-\item{predicted_age_label_fmt}{\code{sprintf()} format string for the predicted
-age annotation text.}
+\item{predicted_age_label}{Text template for the predicted age annotation.
+Use \code{{value}} as a placeholder for the numeric value.}
 
-\item{effect_label_fmt}{\code{sprintf()} format string for effect labels shown
-inside bars.}
+\item{effect_label}{Text template for effect labels shown inside bars. Use
+\code{{value}} as a placeholder for the numeric value.}
 }
 \value{
 A ggplot object.
