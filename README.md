@@ -126,7 +126,7 @@ This is simple, but it can be **age-biased** when the clock has regression-to-th
 NOTE: AAA is sometimes referred to as ΔAge; we use AAA here for parallelism with RAA.
 
 
-### 2) Residual age acceleration (RAA; regression residuals)
+### 2) Relative age acceleration (RAA; regression residuals)
 
 A common fix is to regress clock output on age in a chosen cohort and use residuals:
 
@@ -176,7 +176,7 @@ where `y_exp(age)` (stored as `expected`) is computed by applying the *same cloc
 - `deviation = y_hat − y_exp(age)` subtracts an **age-matched baseline** instead of subtracting chronological age directly. This avoids the classic regression-to-the-mean artifact that makes `AAA = y_hat − age` systematically positive at young ages and negative at old ages when the clock slope is < 1.
 - In practice, this helps when `y_exp(age)` tracks the **typical clock output at that age** in the reference setting (i.e., it behaves like an age-conditional expectation for the reference). If cross-cohort effects or biology cause the clock’s age-trend to differ strongly between the reference and the target, `deviation` may still show residual age trends (which should be interpreted as reference mismatch and/or biological decoupling, depending on context).
 
-#### Relationship to residual-based age acceleration (RAA)
+#### Relationship to relative age acceleration (RAA)
 
 - RAA is often defined as residuals from `lm(y_hat ~ age)` in some cohort. ClockSHAP’s `deviation` is similar in spirit: it measures how far a sample’s clock output lies above/below the **age-conditional expectation**, except that ClockSHAP defines that expectation through a **feature-level reference profile** rather than a regression on `y_hat`.
 - Because of this difference in how the expectation is constructed, `deviation` and regression residuals are not guaranteed to match in all settings. They will be numerically close when `y_exp(age)` closely approximates the cohort’s age-conditional mean clock output.
