@@ -85,44 +85,39 @@ plot_clockshap_waterfall(cs, sample = 1, top_n = 10)
 
 ## How “expected” is defined (the reference profile)
 
-## How “expected” is defined (the reference profile)
+Aging-clock input features often change systematically with chronological age. A single global baseline (e.g., the unconditional mean feature vector) can be inappropriate for comparing younger vs. older samples.
 
-Aging-clock input features often change systematically with chronological age.
-A single global baseline (e.g., the unconditional mean feature vector) can be inappropriate for comparing younger vs. older samples.
+ClockSHAP therefore uses an **age-conditioned reference profile**. For each feature `k`, we estimate an age trend in a reference cohort:
 
-ClockSHAP therefore uses an **age-conditioned reference profile**. For each feature \(k\), we estimate an age trend in a reference cohort:
-
-\[
-x^{\mathrm{ref}}_k(a) \;=\; \gamma_{0k} + \gamma_{1k}\,a
-\]
+```text
+x_ref[k](age) = gamma0[k] + gamma1[k] * age
+```
 
 where `gamma0[k]` and `gamma1[k]` are stored in the fitted `reference_profile` object.
 
-Given a clock that maps features \(x\) to a predicted age \(\widehat{y} = f(x)\), ClockSHAP defines:
+Given a clock that maps features `x` to a predicted age `y_hat = f(x)`, ClockSHAP defines:
 
-\[
-\widehat{y}_{\mathrm{exp}}(a) \;=\; f\!\left(x^{\mathrm{ref}}(a)\right), \qquad
-\mathrm{deviation} \;=\; \widehat{y} - \widehat{y}_{\mathrm{exp}}(a)
-\]
+```text
+y_exp(age)  = f( x_ref(age) )
+deviation   = y_hat - y_exp(age)
+```
 
 Interpretation:
 - `expected` is the clock’s **typical output** for reference individuals of the **same chronological age**.
 - `deviation` is **how far above/below that age-matched expectation** a sample lies.
 
-In this package, `reference_profile` is fit as per-feature linear models by default (the \(\gamma_0,\gamma_1\) parameters above). You can treat \(\widehat{y}_{\mathrm{exp}}(a)\) as an age-matched baseline defined through the feature space rather than a direct regression on predicted values.
+In this package, `reference_profile` is fit as per-feature linear models by default (the `gamma0/gamma1` parameters above). You can treat `y_exp(age)` as an age-matched baseline defined through the feature space rather than a direct regression on predicted values.
 
 
 ## Terminology (delta age, age acceleration, and what ClockSHAP explains)
-
-## Terminology (ΔAge, RAA, and what ClockSHAP explains)
 
 Below are three quantities that are often discussed together but are **not the same**. ClockSHAP is built to explain **deviation from an age-matched reference expectation**, not raw prediction error.
 
 ### 1) Absolute delta age (predicted − chronological age)
 
-\[
-\Delta \mathrm{Age} \;=\; \widehat{y} - a
-\]
+```text
+DeltaAge = y_hat - age
+```
 
 This is simple, but it can be **age-biased** when the clock has regression-to-the-mean (e.g., slope < 1), leading to younger samples being over-predicted and older samples under-predicted.
 
@@ -134,11 +129,17 @@ A common fix is to regress clock output on age in a chosen cohort and use residu
 RAA <- residuals(stats::lm(predicted ~ age))
 ```
 
-Conceptually, if the fitted line in that cohort is \(\widehat{y} \approx \beta_0 + \beta_1 a\), then:
+Equivalently, if the fitted line in that cohort is:
 
-\[
-\mathrm{RAA} \;=\; \widehat{y} - (\beta_0 + \beta_1 a)
-\]
+```text
+y_hat ≈ beta0 + beta1 * age
+```
+
+then:
+
+```text
+RAA = y_hat - (beta0 + beta1 * age)
+```
 
 This is a **post hoc calibration** intended to remove systematic age trends in prediction error.
 
@@ -146,25 +147,23 @@ This is a **post hoc calibration** intended to remove systematic age trends in p
 
 ClockSHAP uses the **age-conditioned** target:
 
-\[
-\mathrm{deviation} \;=\; \widehat{y} - \widehat{y}_{\mathrm{exp}}(a)
-\]
+```text
+deviation = y_hat - y_exp(age)
+```
 
-where \(\widehat{y}_{\mathrm{exp}}(a)\) is computed by applying the *same clock* to an **age-conditioned reference profile** (see “How expected is defined” below).
+where `y_exp(age)` (stored as `expected`) is computed by applying the *same clock* to an **age-conditioned reference profile** (see “How expected is defined” below).
 
 Why this often reduces age bias without an extra regression step:
-- If the clock tends to over-predict at younger ages and under-predict at older ages, that pattern can appear in both \(\widehat{y}\) and \(\widehat{y}_{\mathrm{exp}}(a)\) (assuming upstream harmonization / normalization).
+- If the clock tends to over-predict at younger ages and under-predict at older ages, that pattern can appear in both `y_hat` and `y_exp(age)` (assuming upstream harmonization / normalization).
 - Subtracting them targets deviation from an **age-matched expectation** by construction.
 
 Relationship to residual-based acceleration (RAA):
-- If the reference expectation \(\widehat{y}_{\mathrm{exp}}(a)\) approximates \(E[\widehat{y}\mid a]\) for a cohort similar to what you would use for `lm(predicted ~ age)`, then `deviation` and RAA can be similar numerically.
-- They are not guaranteed to be identical in general, because \(\widehat{y}_{\mathrm{exp}}(a)\) is defined through a **feature-level** reference profile, not directly through a regression on predicted values.
-- In the common case where (i) the clock is linear-additive and (ii) the reference profile is linear in age per feature (the default in this package), \(\widehat{y}_{\mathrm{exp}}(a)\) becomes a linear function of age and `deviation` can coincide with reference-cohort residualization.
+- If `y_exp(age)` approximates `E[y_hat | age]` for a cohort similar to what you would use for `lm(predicted ~ age)`, then `deviation` and RAA can be similar numerically.
+- They are not guaranteed to be identical in general, because `y_exp(age)` is defined through a **feature-level** reference profile, not directly through a regression on predicted values.
+- In the common case where (i) the clock is linear-additive and (ii) the reference profile is linear in age per feature (the default in this package), `y_exp(age)` becomes a linear function of age and `deviation` can coincide with reference-cohort residualization.
 
 **Naming note:** we recommend calling this quantity **“deviation”** or **“age-matched deviation”** (and using ΔAge / RAA only when you explicitly mean those definitions).
 
-
-## Why we call it “SHAP”
 
 ## Why we call it “SHAP”
 
@@ -172,48 +171,40 @@ For **linear-additive models**, SHAP-style additive attributions have a closed-f
 
 Write the clock on standardized features:
 
-\[
-\widehat{y} \;=\; \alpha + \sum_k \beta_k z_k,
-\qquad
-z_k = \frac{x_k - \mu_k}{\sigma_k}
-\]
+```text
+y_hat = alpha + sum_k beta[k] * z[k]
+z[k]  = (x[k] - mu[k]) / sigma[k]
+```
 
-Given a baseline standardized feature vector \(z^{\mathrm{ref}}\), linear-model SHAP values reduce to:
+Given a baseline standardized feature vector `z_ref`, linear-model SHAP values reduce to:
 
-\[
-\phi_k \;=\; \beta_k\,(z_k - z^{\mathrm{ref}}_k)
-\]
+```text
+phi[k] = beta[k] * ( z[k] - z_ref[k] )
+```
 
 and additivity holds exactly:
 
-\[
-\sum_k \phi_k \;=\; \widehat{y}(x) - \widehat{y}(z^{\mathrm{ref}})
-\]
+```text
+sum_k phi[k] = y_hat(x) - y_hat(z_ref)
+```
 
 ### The ClockSHAP twist: the baseline depends on age
 
-In aging clocks, the most meaningful baseline depends on chronological age.
-ClockSHAP sets the baseline using the reference profile:
+In aging clocks, the most meaningful baseline depends on chronological age. ClockSHAP sets the baseline using the reference profile:
 
-\[
-x^{\mathrm{ref}}_k(a) = \gamma_{0k} + \gamma_{1k}a,
-\qquad
-z^{\mathrm{ref}}_k(a) = \frac{x^{\mathrm{ref}}_k(a) - \mu_k}{\sigma_k}
-\]
+```text
+x_ref[k](age) = gamma0[k] + gamma1[k] * age
+z_ref[k](age) = ( x_ref[k](age) - mu[k] ) / sigma[k]
+```
 
 So ClockSHAP uses:
 
-\[
-\widehat{y}_{\mathrm{exp}}(a) \;=\; \alpha + \sum_k \beta_k z^{\mathrm{ref}}_k(a)
-\]
-\[
-\phi_k(a) \;=\; \beta_k\,(z_k - z^{\mathrm{ref}}_k(a))
-\]
-\[
-\mathrm{deviation} \;=\; \widehat{y} - \widehat{y}_{\mathrm{exp}}(a),
-\qquad
-\sum_k \phi_k(a) \;=\; \mathrm{deviation}
-\]
+```text
+y_exp(age)   = alpha + sum_k beta[k] * z_ref[k](age)
+phi[k](age)  = beta[k] * ( z[k] - z_ref[k](age) )
+deviation    = y_hat - y_exp(age)
+sum_k phi[k](age) = deviation
+```
 
 This preserves exact additivity while making the baseline biologically appropriate for aging-clock interpretation.
 
