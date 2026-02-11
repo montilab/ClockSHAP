@@ -459,10 +459,10 @@ test_that("plot_clockshap_waterfall returns a ggplot object", {
     top_n = 3,
     x_axis_title = "Clock Age",
     y_axis_title = "Features",
-    deviation_label_fmt = "Dev = %+.1f years",
-    expected_age_label_fmt = "Expected\\n%.1f years",
-    predicted_age_label_fmt = "Predicted\\n%.1f years",
-    effect_label_fmt = "%+.2f"
+    deviation_label = "Dev = {value} years",
+    expected_age_label = "Expected\\n{value} years",
+    predicted_age_label = "Predicted\\n{value} years",
+    effect_label = "{value}"
   )
 
   expect_s3_class(p1, "ggplot")

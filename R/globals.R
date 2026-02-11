@@ -4,7 +4,8 @@ if (getRversion() >= "2.15.1") {
   utils::globalVariables(
     c(
       "Feature", "Eff", "Sign", "IsOther",
-      "Start", "End", "y", "fill_key", "Mid"
+      "Start", "End", "y", "fill_key", "Mid",
+      "xend", "yend"
     )
   )
 }
