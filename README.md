@@ -113,10 +113,10 @@ In this package, `reference_profile` is fit as per-feature linear models by defa
 
 Below are three quantities that are often discussed together but are **not the same**. ClockSHAP is built to explain **deviation from an age-matched reference expectation**, not raw prediction error.
 
-### 1) Absolute delta age (predicted − chronological age)
+### 1) Absolute age acceleration (predicted − chronological age) (sometimes refered to as delta age)
 
 ```text
-DeltaAge = y_hat - age
+AAA = y_hat - age
 ```
 
 This is simple, but it can be **age-biased** when the clock has regression-to-the-mean (e.g., slope < 1), leading to younger samples being over-predicted and older samples under-predicted.
