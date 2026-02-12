@@ -209,6 +209,59 @@ test_that("ClockSHAP errors when age length != nrow(features)", {
 })
 
 
+test_that("ClockSHAP enforces strict alignment of names(age) and rownames(features)", {
+
+  features <- matrix(rnorm(12), nrow = 4, ncol = 3)
+  colnames(features) <- c("A", "B", "C")
+  rownames(features) <- c("S1", "S2", "S3", "S4")
+
+  age_ok <- c(S1 = 10, S2 = 20, S3 = 30, S4 = 40)
+  age_bad_order <- c(S2 = 20, S1 = 10, S3 = 30, S4 = 40)
+  age_bad_names <- c(S1 = 10, S2 = 20, S3 = 30, SX = 40)
+  age_unnamed <- c(10, 20, 30, 40)
+
+  clock <- linear_clock(
+    alpha = 0,
+    beta  = c(A = 1, B = 1, C = 1),
+    mu    = c(A = 0, B = 0, C = 0),
+    sigma = c(A = 1, B = 1, C = 1)
+  )
+
+  ref <- reference_profile(
+    gamma0 = c(A = 0, B = 0, C = 0),
+    gamma1 = c(A = 0, B = 0, C = 0)
+  )
+
+  expect_no_error(clockshap(features, age_ok, clock, ref))
+  expect_error(clockshap(features, age_bad_order, clock, ref))
+  expect_error(clockshap(features, age_bad_names, clock, ref))
+  expect_error(clockshap(features, age_unnamed, clock, ref))
+})
+
+
+test_that("ClockSHAP errors if age is named but features rownames are missing", {
+
+  features <- matrix(rnorm(12), nrow = 4, ncol = 3)
+  colnames(features) <- c("A", "B", "C")
+  rownames(features) <- NULL
+  age <- c(S1 = 10, S2 = 20, S3 = 30, S4 = 40)
+
+  clock <- linear_clock(
+    alpha = 0,
+    beta  = c(A = 1, B = 1, C = 1),
+    mu    = c(A = 0, B = 0, C = 0),
+    sigma = c(A = 1, B = 1, C = 1)
+  )
+
+  ref <- reference_profile(
+    gamma0 = c(A = 0, B = 0, C = 0),
+    gamma1 = c(A = 0, B = 0, C = 0)
+  )
+
+  expect_error(clockshap(features, age, clock, ref))
+})
+
+
 test_that("ClockSHAP errors on NA feature values (explicitly enforce complete cases)", {
 
   features <- matrix(rnorm(12), nrow = 4, ncol = 3)
@@ -435,7 +488,7 @@ test_that("plot_clockshap_waterfall returns a ggplot object", {
   features <- matrix(rnorm(20), nrow = 5, ncol = 4)
   colnames(features) <- paste0("F", 1:4)
   rownames(features) <- paste0("S", 1:5)
-  age <- c(40, 50, 60, 70, 80)
+  age <- c(S1 = 40, S2 = 50, S3 = 60, S4 = 70, S5 = 80)
 
   clock <- linear_clock(
     alpha = 10,

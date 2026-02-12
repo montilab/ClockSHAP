@@ -10,7 +10,9 @@ clockshap(features, age, clock, reference, max_age = NULL)
 \item{features}{A matrix or data.frame of feature values
 (samples x features).}
 
-\item{age}{Numeric vector of chronological ages (length = nrow(features)).}
+\item{age}{Numeric vector of chronological ages (length = nrow(features)).
+If sample identifiers are provided (\code{rownames(features)} and
+\code{names(age)}), they must match exactly and in the same order.}
 
 \item{clock}{A \code{linear_clock} object.}
 

@@ -6,6 +6,8 @@
 #' @param features A matrix or data.frame of feature values
 #'   (samples x features).
 #' @param age Numeric vector of chronological ages (length = nrow(features)).
+#'   If sample identifiers are provided (`rownames(features)` and
+#'   `names(age)`), they must match exactly and in the same order.
 #' @param clock A `linear_clock` object.
 #' @param reference A `reference_profile` object.
 #' @param max_age Optional numeric scalar. Samples with `age > max_age` are
@@ -74,6 +76,31 @@ clockshap <- function(features, age, clock, reference, max_age = NULL) {
   }
   if (anyNA(age)) {
     stop("`age` must not contain missing values.", call. = FALSE)
+  }
+
+  feat_rows <- rownames(features)
+  age_names <- names(age)
+  if (!is.null(feat_rows) || !is.null(age_names)) {
+    if (is.null(feat_rows)) {
+      stop("`rownames(features)` are required when `age` is named.",
+           call. = FALSE)
+    }
+    if (is.null(age_names)) {
+      stop("`names(age)` are required when `features` has row names.",
+           call. = FALSE)
+    }
+    if (anyNA(feat_rows) || any(feat_rows == "") || anyDuplicated(feat_rows)) {
+      stop("`rownames(features)` must be non-missing, non-empty, and unique.",
+           call. = FALSE)
+    }
+    if (anyNA(age_names) || any(age_names == "") || anyDuplicated(age_names)) {
+      stop("`names(age)` must be non-missing, non-empty, and unique.",
+           call. = FALSE)
+    }
+    if (!identical(age_names, feat_rows)) {
+      stop("`names(age)` must exactly match `rownames(features)` in the same order.",
+           call. = FALSE)
+    }
   }
   if (!is.null(max_age)) {
     if (!is.numeric(max_age) || length(max_age) != 1 || !is.finite(max_age)) {
