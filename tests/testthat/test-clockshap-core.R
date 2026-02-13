@@ -579,3 +579,100 @@ test_that("waterfall effect labels match per-bar effects", {
   built <- ggplot2::ggplot_build(p)
   expect_equal(as.character(built$data[[text_layer_idx]]$label), unname(expected_labels))
 })
+
+
+test_that("waterfall auto mode moves small labels outside with connectors", {
+
+  skip_if_not_installed("ggplot2")
+
+  features <- matrix(c(10, 0.10, 0.05, 0.02), nrow = 1)
+  colnames(features) <- c("F1", "F2", "F3", "F4")
+  age <- c(50)
+
+  clock <- linear_clock(
+    alpha = 0,
+    beta  = c(F1 = 1, F2 = 1, F3 = 1, F4 = 1),
+    mu    = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0),
+    sigma = c(F1 = 1, F2 = 1, F3 = 1, F4 = 1)
+  )
+  ref <- reference_profile(
+    gamma0 = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0),
+    gamma1 = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0)
+  )
+
+  cs <- clockshap(features, age, clock, ref)
+
+  p <- plot_clockshap_waterfall(
+    cs,
+    sample = 1,
+    top_n = 4,
+    show_age_labels = FALSE,
+    show_delta_label = FALSE,
+    effect_label = "phi={value}",
+    effect_label_mode = "auto",
+    effect_label_min_frac = 0.10,
+    effect_label_outside_nudge_frac = 0.03,
+    show_effect_label_connectors = TRUE
+  )
+
+  built <- ggplot2::ggplot_build(p)
+
+  text_layer_idx <- which(
+    vapply(p$layers, function(layer) inherits(layer$geom, "GeomText"), logical(1))
+  )
+  hjust_values <- unlist(lapply(text_layer_idx, function(i) built$data[[i]]$hjust))
+  expect_true(any(hjust_values %in% c(0, 1)))
+
+  has_connector_layer <- any(vapply(
+    built$data,
+    function(d) {
+      is.data.frame(d) &&
+        "colour" %in% names(d) &&
+        nrow(d) > 0 &&
+        all(d$colour == "grey40")
+    },
+    logical(1)
+  ))
+  expect_true(has_connector_layer)
+})
+
+
+test_that("waterfall hide_small mode suppresses small-bar effect labels", {
+
+  skip_if_not_installed("ggplot2")
+
+  features <- matrix(c(10, 0.10, 0.05, 0.02), nrow = 1)
+  colnames(features) <- c("F1", "F2", "F3", "F4")
+  age <- c(50)
+
+  clock <- linear_clock(
+    alpha = 0,
+    beta  = c(F1 = 1, F2 = 1, F3 = 1, F4 = 1),
+    mu    = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0),
+    sigma = c(F1 = 1, F2 = 1, F3 = 1, F4 = 1)
+  )
+  ref <- reference_profile(
+    gamma0 = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0),
+    gamma1 = c(F1 = 0, F2 = 0, F3 = 0, F4 = 0)
+  )
+
+  cs <- clockshap(features, age, clock, ref)
+
+  p <- plot_clockshap_waterfall(
+    cs,
+    sample = 1,
+    top_n = 4,
+    show_age_labels = FALSE,
+    show_delta_label = FALSE,
+    effect_label = "phi={value}",
+    effect_label_mode = "hide_small",
+    effect_label_min_frac = 0.10
+  )
+
+  built <- ggplot2::ggplot_build(p)
+  text_layer_idx <- which(
+    vapply(p$layers, function(layer) inherits(layer$geom, "GeomText"), logical(1))
+  )
+  labels <- unlist(lapply(text_layer_idx, function(i) as.character(built$data[[i]]$label)))
+  expect_equal(unname(labels), "phi=+10.0")
+})

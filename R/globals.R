@@ -5,7 +5,7 @@ if (getRversion() >= "2.15.1") {
     c(
       "Feature", "Eff", "Sign", "IsOther",
       "Start", "End", "y", "fill_key", "Mid",
-      "xend", "yend"
+      "xend", "yend", "label_x", "label_hjust", "connector_xend"
     )
   )
 }
