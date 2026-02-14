@@ -56,7 +56,7 @@ plot_clockshap_waterfall <- function(
     show_age_labels = TRUE,
     show_delta_label = TRUE,
     show_effect_labels = TRUE,
-    effect_label_mode = c("auto", "inside", "outside", "hide_small"),
+    effect_label_mode = "auto",
     effect_label_min_frac = 0.03,
     effect_label_outside_nudge_frac = 0.02,
     show_effect_label_connectors = TRUE,
@@ -79,7 +79,10 @@ plot_clockshap_waterfall <- function(
     stop("`top_n` must be a positive integer.", call. = FALSE)
   }
   top_n <- as.integer(top_n)
-  effect_label_mode <- match.arg(effect_label_mode)
+  effect_label_mode <- match.arg(
+    effect_label_mode,
+    c("auto", "inside", "outside", "hide_small")
+  )
   if (!is.numeric(effect_label_min_frac) || length(effect_label_min_frac) != 1 ||
       !is.finite(effect_label_min_frac) || effect_label_min_frac < 0) {
     stop("`effect_label_min_frac` must be a single non-negative finite number.",
