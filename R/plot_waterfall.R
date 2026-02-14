@@ -13,6 +13,16 @@
 #' @param show_age_labels Logical; show the expected/predicted age text labels.
 #' @param show_delta_label Logical; show the deviation label above the arrow.
 #' @param show_effect_labels Logical; show the contribution values inside bars.
+#' @param effect_label_mode Label placement strategy for effect labels. `"auto"`
+#'   places labels inside sufficiently large bars and outside small bars.
+#'   `"inside"` places all labels inside, `"outside"` places all labels outside,
+#'   and `"hide_small"` hides labels for small bars.
+#' @param effect_label_min_frac Numeric scalar giving the minimum bar width
+#'   (as a fraction of x-axis span) required for inside placement.
+#' @param effect_label_outside_nudge_frac Numeric scalar giving outside-label
+#'   horizontal offset (as a fraction of x-axis span).
+#' @param show_effect_label_connectors Logical; draw connector segments from bar
+#'   ends to outside labels.
 #' @param x_axis_title Character scalar for the x-axis title.
 #' @param y_axis_title Character scalar for the y-axis title. Use `NULL` for no
 #'   title.
@@ -46,6 +56,10 @@ plot_clockshap_waterfall <- function(
     show_age_labels = TRUE,
     show_delta_label = TRUE,
     show_effect_labels = TRUE,
+    effect_label_mode = c("auto", "inside", "outside", "hide_small"),
+    effect_label_min_frac = 0.03,
+    effect_label_outside_nudge_frac = 0.02,
+    show_effect_label_connectors = TRUE,
     x_axis_title = "Age (years)",
     y_axis_title = NULL,
     deviation_label = "Deviation = {value} yr",
@@ -65,6 +79,24 @@ plot_clockshap_waterfall <- function(
     stop("`top_n` must be a positive integer.", call. = FALSE)
   }
   top_n <- as.integer(top_n)
+  effect_label_mode <- match.arg(effect_label_mode)
+  if (!is.numeric(effect_label_min_frac) || length(effect_label_min_frac) != 1 ||
+      !is.finite(effect_label_min_frac) || effect_label_min_frac < 0) {
+    stop("`effect_label_min_frac` must be a single non-negative finite number.",
+         call. = FALSE)
+  }
+  if (!is.numeric(effect_label_outside_nudge_frac) ||
+      length(effect_label_outside_nudge_frac) != 1 ||
+      !is.finite(effect_label_outside_nudge_frac) ||
+      effect_label_outside_nudge_frac <= 0) {
+    stop("`effect_label_outside_nudge_frac` must be a single positive finite number.",
+         call. = FALSE)
+  }
+  if (!is.logical(show_effect_label_connectors) ||
+      length(show_effect_label_connectors) != 1 ||
+      is.na(show_effect_label_connectors)) {
+    stop("`show_effect_label_connectors` must be TRUE or FALSE.", call. = FALSE)
+  }
   if (!is.character(x_axis_title) || length(x_axis_title) != 1) {
     stop("`x_axis_title` must be a single character string.", call. = FALSE)
   }
@@ -185,8 +217,49 @@ plot_clockshap_waterfall <- function(
   if (!is.finite(x_span) || x_span <= 0) {
     x_span <- 1
   }
+  eff_values <- sprintf("%+.1f", wf_plot$Eff)
+  wf_plot$eff_label <- vapply(
+    eff_values,
+    function(v) sub("{value}", v, effect_label, fixed = TRUE),
+    character(1)
+  )
+
+  small_cutoff <- effect_label_min_frac * x_span
+  is_small <- abs(wf_plot$Eff) < small_cutoff
+  label_place <- rep("inside", nrow(wf_plot))
+  if (effect_label_mode == "outside") {
+    label_place[] <- "outside"
+  } else if (effect_label_mode == "hide_small") {
+    label_place[is_small] <- "hidden"
+  } else if (effect_label_mode == "auto") {
+    label_place[is_small] <- "outside"
+  }
+  wf_plot$label_place <- label_place
+
+  outside_nudge <- effect_label_outside_nudge_frac * x_span
+  connector_gap <- 0.005 * x_span
+  wf_plot$label_x <- ifelse(
+    wf_plot$Eff >= 0,
+    wf_plot$End + outside_nudge,
+    wf_plot$End - outside_nudge
+  )
+  wf_plot$label_hjust <- ifelse(wf_plot$Eff >= 0, 0, 1)
+  wf_plot$connector_xend <- ifelse(
+    wf_plot$Eff >= 0,
+    wf_plot$label_x - connector_gap,
+    wf_plot$label_x + connector_gap
+  )
+
   x_pad_left  <- 0.04 * x_span
   x_pad_right <- 0.08 * x_span
+  if (any(wf_plot$label_place == "outside")) {
+    if (any(wf_plot$label_place == "outside" & wf_plot$Eff < 0)) {
+      x_pad_left <- max(x_pad_left, outside_nudge + 0.14 * x_span)
+    }
+    if (any(wf_plot$label_place == "outside" & wf_plot$Eff >= 0)) {
+      x_pad_right <- max(x_pad_right, outside_nudge + 0.14 * x_span)
+    }
+  }
 
   x_breaks <- pretty_breaks(n = 6)(
     c(x_min - x_pad_left, x_max + x_pad_right)
@@ -339,21 +412,41 @@ plot_clockshap_waterfall <- function(
   }
 
   if (isTRUE(show_effect_labels)) {
-    eff_values <- sprintf("%+.1f", wf_plot$Eff)
-    eff_labels <- vapply(
-      eff_values,
-      function(v) sub("{value}", v, effect_label, fixed = TRUE),
-      character(1)
-    )
+    wf_inside <- wf_plot[wf_plot$label_place == "inside", , drop = FALSE]
+    wf_outside <- wf_plot[wf_plot$label_place == "outside", , drop = FALSE]
 
-    p <- p + geom_text(
-      data = wf_plot,
-      aes(x = Mid, y = y),
-      label = eff_labels,
-      colour = "white",
-      size = 3.6,
-      fontface = "bold"
-    )
+    if (nrow(wf_inside) > 0) {
+      p <- p + geom_text(
+        data = wf_inside,
+        aes(x = Mid, y = y),
+        label = wf_inside$eff_label,
+        colour = "white",
+        size = 3.6,
+        fontface = "bold"
+      )
+    }
+
+    if (nrow(wf_outside) > 0) {
+      if (isTRUE(show_effect_label_connectors)) {
+        p <- p + geom_segment(
+          data = wf_outside,
+          aes(x = End, xend = connector_xend, y = y, yend = y),
+          inherit.aes = FALSE,
+          linewidth = 0.5,
+          colour = "grey40"
+        )
+      }
+
+      p <- p + geom_text(
+        data = wf_outside,
+        aes(x = label_x, y = y, hjust = label_hjust),
+        inherit.aes = FALSE,
+        label = wf_outside$eff_label,
+        colour = "grey15",
+        size = 3.6,
+        fontface = "bold"
+      )
+    }
   }
 
   return(p)

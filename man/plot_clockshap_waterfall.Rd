@@ -11,6 +11,10 @@ plot_clockshap_waterfall(
   show_age_labels = TRUE,
   show_delta_label = TRUE,
   show_effect_labels = TRUE,
+  effect_label_mode = c("auto", "inside", "outside", "hide_small"),
+  effect_label_min_frac = 0.03,
+  effect_label_outside_nudge_frac = 0.02,
+  show_effect_label_connectors = TRUE,
   x_axis_title = "Age (years)",
   y_axis_title = NULL,
   deviation_label = "Deviation = {value} yr",
@@ -31,6 +35,20 @@ plot_clockshap_waterfall(
 \item{show_delta_label}{Logical; show the deviation label above the arrow.}
 
 \item{show_effect_labels}{Logical; show the contribution values inside bars.}
+
+\item{effect_label_mode}{Label placement strategy for effect labels. \code{"auto"}
+places labels inside sufficiently large bars and outside small bars.
+\code{"inside"} places all labels inside, \code{"outside"} places all labels outside,
+and \code{"hide_small"} hides labels for small bars.}
+
+\item{effect_label_min_frac}{Numeric scalar giving the minimum bar width
+(as a fraction of x-axis span) required for inside placement.}
+
+\item{effect_label_outside_nudge_frac}{Numeric scalar giving outside-label
+horizontal offset (as a fraction of x-axis span).}
+
+\item{show_effect_label_connectors}{Logical; draw connector segments from bar
+ends to outside labels.}
 
 \item{x_axis_title}{Character scalar for the x-axis title.}
 
