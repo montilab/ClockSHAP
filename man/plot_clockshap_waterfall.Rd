@@ -11,7 +11,7 @@ plot_clockshap_waterfall(
   show_age_labels = TRUE,
   show_delta_label = TRUE,
   show_effect_labels = TRUE,
-  effect_label_mode = c("auto", "inside", "outside", "hide_small"),
+  effect_label_mode = "auto",
   effect_label_min_frac = 0.03,
   effect_label_outside_nudge_frac = 0.02,
   show_effect_label_connectors = TRUE,
