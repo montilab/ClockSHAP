@@ -168,7 +168,7 @@ plot_clockshap_waterfall <- function(
 
   exp_i_r  <- round(exp_i, 1)
   pred_i_r <- round(pred_i, 1)
-  delta_i  <- pred_i_r - exp_i_r
+  delta_i  <- pred_i - exp_i
 
   ## ------------------------------------------------------------
   ## Cumulative positions for waterfall
