@@ -196,9 +196,9 @@ A post hoc calibration that removes systematic age trends in prediction error wi
 
 **ClockSHAP deviation (`predicted − expected`):**
 
-Similar in spirit to RAA, but the age-conditional expectation is built through a **feature-level reference profile** (`gamma0 + gamma1 * age` per feature, then passed through the clock) rather than via regression on `y_hat`. In the default setup (linear clock, linear per-feature reference trends), `y_exp(age)` is linear in age, so `deviation` often matches the residual from a reference-cohort fit of `y_hat ~ age` numerically — as we observed in our GTEx → TCGA application.
+ClockSHAP's `deviation` generalizes RAA. The age-conditional expectation is built through a **feature-level reference profile** (per-feature OLS trends `gamma0 + gamma1 * age`, passed through the clock) rather than by regressing `y_hat` on age directly. This has an exact special case: **for a linear-additive clock, when the reference profile is fit on the cohort of interest itself, `deviation` equals RAA sample-for-sample.** Because `y_hat` is an exact linear function of the features and OLS projection onto age is linear, passing the per-feature age trends through the clock reproduces the OLS fit of `y_hat ~ age` exactly, so `predicted − expected = predicted − fitted = residual = RAA`.
 
-When the reference and target cohorts have different age trends (cross-cohort effects, biological decoupling), `deviation` and RAA can diverge, and that divergence is itself interpretable as reference mismatch.
+The purpose of ClockSHAP is what happens when the reference is set to a *different*, biologically meaningful cohort (e.g., GTEx tissue-of-origin). `expected` is then anchored to normal aging in that reference rather than to the target cohort's own internal trend, and `deviation` measures departure from that external expectation. Any divergence from a target-internal RAA is itself interpretable as reference mismatch or biological decoupling — the signal the GTEx → TCGA application is designed to surface.
 
 We recommend the name **"deviation"** or **"age-matched deviation"** to keep this distinct from AAA and RAA.
 
