@@ -33,7 +33,7 @@ Top feature contributions (phi, sum exactly to deviation):
 
 The interpretation is direct: this sample is 5.5 clock-years older than expected for a 58-year-old in the reference cohort, and CDKN2A, COL1A1, and IL6 are the dominant drivers.
 
-This output drops into downstream analyses — cohort-level comparisons of which features drive deviation, deep dives on individual samples, or hypothesis generation about which biological programs are differentially engaged.
+This output drops into downstream analyses, e.g.: cohort-level comparisons of which features drive deviation, deep dives on individual samples, or hypothesis generation about which biological features are differentially engaged between samples or cohorts. 
 
 `plot_clockshap_waterfall(cs, sample = i)` renders this decomposition as a waterfall plot.
 
