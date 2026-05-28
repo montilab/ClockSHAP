@@ -17,21 +17,21 @@ For each sample, ClockSHAP returns a per-feature decomposition of how far that s
 ```
 Sample ID:            TCGA-XX-1234
 Chronological age:    58 years
-Predicted clock age:  67 years     <- y_hat
+Predicted clock age:  66.5 years   <- y_hat
 Expected for age 58:  61 years     <- y_exp(age) from reference profile
-Deviation:            +6 years     <- predicted - expected
+Deviation:            +5.5 years   <- predicted - expected
 
 Top feature contributions (phi, sum exactly to deviation):
   CDKN2A      +3.1
   COL1A1      +2.4
   IL6         +1.8
-  SOX2        -0.5
-  ... (remaining features)  -0.8
+  SOX2        -1.0
+  Other (remaining features) -0.8
   ------------------------
-  Total       +6.0
+  Total       +5.5
 ```
 
-The interpretation is direct: this sample is six clock-years older than expected for a 58-year-old in the reference cohort, and CDKN2A, COL1A1, and IL6 are the dominant drivers.
+The interpretation is direct: this sample is 5.5 clock-years older than expected for a 58-year-old in the reference cohort, and CDKN2A, COL1A1, and IL6 are the dominant drivers.
 
 This output drops into downstream analyses — cohort-level comparisons of which features drive deviation, deep dives on individual samples, or hypothesis generation about which biological programs are differentially engaged.
 
