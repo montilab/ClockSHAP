@@ -208,7 +208,7 @@ We recommend the name **"deviation"** or **"age-matched deviation"** to keep thi
 
 - **Deviation is reference-dependent.** Choice of reference cohort defines what "expected for age" means.
 - **"Years" are clock-relative.** A deviation of +5 under one clock is not comparable to +5 under a different clock, training set, or feature space.
-- **Upstream preprocessing matters — a lot.** ClockSHAP assumes the feature matrix is analysis-ready and consistent with the clock (transformations, normalization, feature matching, batch correction, QC). Mismatched feature spaces or batch effects produce technical, not biological, deviations. The importance of this step cannot be overstated.
+- **Upstream preprocessing matters — a lot.** As in any clock application scenario, application and/or comparison of aging clock results across cohorts is not trivial. ClockSHAP assumes the feature matrix is analysis-ready and consistent with the clock (transformations, normalization, feature matching, batch correction, QC). Mismatched feature spaces or batch effects produce technical, not biological, deviations. The importance of this step cannot be overstated.
 
 For broader discussion of calibration, age bias, and computational challenges in clock analysis, see [Epigenetic ageing clocks: statistical methods and emerging computational challenges](https://doi.org/10.1038/s41576-024-00807-w) (Nature Reviews Genetics).
 
