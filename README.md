@@ -6,7 +6,7 @@ It answers a single question:
 
 > **Why is this sample predicted to be biologically older or younger than expected for its chronological age?**
 
-The method was developed in the context of tissue-anchored transcriptomic aging clocks but is designed to support comparative aging analyses across diverse clock contexts.
+The method was developed in the context of normal tissue transcriptomic aging clocks applied to primary tumors but is designed to support comparative aging analyses across diverse clock contexts.
 
 ---
 
