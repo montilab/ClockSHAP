@@ -37,6 +37,10 @@ This output drops into downstream analyses — cohort-level comparisons of which
 
 `plot_clockshap_waterfall(cs, sample = i)` renders this decomposition as a waterfall plot.
 
+Worked-example visualization (same illustrative numbers as above):
+
+![ClockSHAP worked example waterfall](man/figures/readme-worked-example-waterfall.png)
+
 ---
 
 ## How it works (in two lines)
