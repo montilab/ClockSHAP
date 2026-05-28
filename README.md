@@ -1,62 +1,81 @@
 # ClockSHAP
 
-ClockSHAP is an interpretability framework for **linear-additive aging clocks** (e.g., transcriptomic, epigenetic, proteomic clocks fit using linear regression, ridge regression, elastic net, etc.).
+ClockSHAP is an interpretability framework for **linear-additive aging clocks** (e.g., transcriptomic, epigenetic, or proteomic clocks fit with linear, ridge, or elastic-net regression).
 
-It answers the question:
+It answers a single question:
 
 > **Why is this sample predicted to be biologically older or younger than expected for its chronological age?**
 
-The method was developed in the context of tissue-anchored transcriptomic aging clocks, but is designed to support comparative aging analyses across diverse clock contexts.
+The method was developed in the context of tissue-anchored transcriptomic aging clocks but is designed to support comparative aging analyses across diverse clock contexts.
 
-## The key point (terminology matters)
+---
 
-Aging-clock papers often use terms like **delta age** and **age acceleration**, sometimes with different meanings.
-ClockSHAP is built around a specific, age-conditioned target:
+## What you get out of ClockSHAP
 
-- **Predicted (clock) age**: `predicted`
-- **Expected (clock) age for the same chronological age**: `expected`
-- **Age-matched deviation** (package output: `deviation`):
+For each sample, ClockSHAP returns a per-feature decomposition of how far that sample lies above or below the clock's age-matched expectation. A worked example (illustrative numbers):
 
-`deviation = predicted - expected`
+```
+Sample ID:            TCGA-XX-1234
+Chronological age:    58 years
+Predicted clock age:  67 years     <- y_hat
+Expected for age 58:  61 years     <- y_exp(age) from reference profile
+Deviation:            +6 years     <- predicted - expected
 
-ClockSHAP explains `deviation` by decomposing it into per-feature contributions (`phi`) that add up exactly:
+Top feature contributions (phi, sum exactly to deviation):
+  CDKN2A      +3.1
+  COL1A1      +2.4
+  IL6         +1.8
+  SOX2        -0.5
+  ... (remaining features)  -0.8
+  ------------------------
+  Total       +6.0
+```
 
-`rowSums(phi) = deviation`
+The interpretation is direct: this sample is six clock-years older than expected for a 58-year-old in the reference cohort, and CDKN2A, COL1A1, and IL6 are the dominant drivers.
 
-> ClockSHAP explains **predicted − expected**, not **predicted − chronological age**.
+This output drops into downstream analyses — cohort-level comparisons of which features drive deviation, deep dives on individual samples, or hypothesis generation about which biological programs are differentially engaged.
 
-If you want common alternatives, see **“Terminology”** below.
+`plot_clockshap_waterfall(cs, sample = i)` renders this decomposition as a waterfall plot.
+
+---
+
+## How it works (in two lines)
+
+ClockSHAP is built around two equations:
+
+```text
+deviation     = predicted - expected
+sum_k phi[k]  = deviation
+```
+
+Everything else in this README is about how `expected` and `phi` are defined and why the additive decomposition holds exactly.
+
+---
 
 ## Installation
 
-ClockSHAP is currently distributed via GitHub.
-
 ```r
-# Option 1 (recommended): pak
+# Recommended
 install.packages("pak")
 pak::pak("montilab/ClockSHAP")
 
-# Option 2: remotes
+# Alternative
 install.packages("remotes")
 remotes::install_github("montilab/ClockSHAP")
-
 ```
+
+---
 
 ## Quick start
 
 ```r
 library(ClockSHAP)
-
 set.seed(1)
 
-# Synthetic data: samples x features
 features <- matrix(rnorm(20), nrow = 5, ncol = 4)
 colnames(features) <- paste0("F", 1:4)
 age <- c(40, 50, 60, 70, 80)
 
-# A linear clock specification:
-# predicted = alpha + sum_k beta[k] * z[k]
-# where z[k] = (x[k] - mu[k]) / sigma[k]
 clock <- linear_clock(
   alpha = 10,
   beta  = setNames(runif(4), colnames(features)),
@@ -64,214 +83,133 @@ clock <- linear_clock(
   sigma = setNames(rep(1, 4), colnames(features))
 )
 
-# Fit an age-feature reference profile from a cohort (per-feature linear models)
 ref <- fit_reference_profile(
   features = as.data.frame(features),
   age = age
 )
 
-# Decompose age-matched deviation into feature contributions
 cs <- clockshap(features = features, age = age, clock = clock, reference = ref)
 
-# Extract components
-phi       <- clockshap_phi(cs)
-predicted <- clockshap_predicted(cs)
-expected  <- clockshap_expected(cs)
-deviation <- clockshap_deviation(cs)
+cs$phi
+cs$deviation
+cs$predicted
+cs$expected
 
-# Visualize one sample
 plot_clockshap_waterfall(cs, sample = 1, top_n = 10)
 ```
 
-## How “expected” is defined (the reference profile)
+The returned `clockshap` object is a list with five fields:
 
-Aging-clock input features often change systematically with chronological age. A single global baseline (e.g., the unconditional mean feature vector) can be inappropriate for comparing younger vs. older samples.
+- `predicted` — clock prediction `y_hat`
+- `expected` — age-matched expectation `y_exp(age)` under the reference
+- `deviation` — `predicted - expected`
+- `phi` — per-feature contribution matrix (rows sum exactly to `deviation`)
+- `age` — input chronological ages
 
-ClockSHAP therefore uses an **age-conditioned reference profile**. For each feature `k`, we estimate an age trend in a reference cohort:
+---
+
+## The building blocks
+
+The rest of this README explains the two equations above:
+
+- What `expected` means (the reference profile)
+- Why per-feature `phi` values exist and sum exactly to `deviation` (the SHAP property)
+- How `deviation` differs from other clock-acceleration metrics (AAA, RAA)
+
+### How `expected` is defined: the reference profile
+
+Aging-clock features change systematically with chronological age. A single global mean baseline is inappropriate for comparing samples of different ages, so ClockSHAP uses an **age-conditioned reference**.
+
+For each feature `k`, we fit an age trend on a reference cohort:
 
 ```text
 x_ref[k](age) = gamma0[k] + gamma1[k] * age
 ```
 
-where `gamma0[k]` and `gamma1[k]` are stored in the fitted `reference_profile` object.
-
-Given a clock that maps features `x` to a predicted age `y_hat = f(x)`, ClockSHAP defines:
+`gamma0[k]` and `gamma1[k]` are stored in the `reference_profile` object. Given a clock `f` mapping features to predicted age:
 
 ```text
 y_exp(age)  = f( x_ref(age) )
 deviation   = y_hat - y_exp(age)
 ```
 
-Interpretation:
-- `expected` is the clock’s **typical output** for reference individuals of the **same chronological age**.
-- `deviation` is **how far above/below that age-matched expectation** a sample lies.
-- Because `expected` comes from a chosen reference (e.g., GTEx tissue-of-origin), `deviation` should be interpreted **relative to that reference**.
+So `expected` is the clock's *typical output for reference individuals of the same chronological age*, and `deviation` is how far above or below that age-matched expectation a sample lies.
 
+**Reference note.** Because `expected` depends on the chosen reference (e.g., GTEx tissue-of-origin), `deviation` should be interpreted **relative to that reference**. It is not a universal biological-age score.
 
-In this package, `reference_profile` is fit as per-feature linear models by default (the `gamma0/gamma1` parameters above). You can treat `y_exp(age)` as an age-matched baseline defined through the feature space rather than a direct regression on predicted values.
+**Interpretation note.** `deviation` is a cross-sectional **state shift** relative to an age-matched expectation; it does not by itself imply a within-individual aging *rate*.
 
+### Why per-feature contributions sum exactly to `deviation`: the SHAP property
 
-## Terminology (delta age, age acceleration, and what ClockSHAP explains)
-
-Below are three quantities that are often discussed together but are **not the same**. ClockSHAP is built to explain **deviation from an age-matched reference expectation**, not raw prediction error.
-
-### 1) Absolute age acceleration (AAA; predicted − chronological age)
-
-```text
-AAA = y_hat - age
-```
-
-This is simple, but it can be **age-biased** when the clock has regression-to-the-mean (e.g., slope < 1), leading to younger samples being over-predicted and older samples under-predicted.
-
-NOTE: AAA is sometimes referred to as ΔAge; we use AAA here for parallelism with RAA.
-
-
-### 2) Relative age acceleration (RAA; regression residuals)
-
-A common fix is to regress clock output on age in a chosen cohort and use residuals:
-
-```r
-RAA <- residuals(stats::lm(predicted ~ age))
-```
-
-Equivalently, if the fitted line in that cohort is:
-
-```text
-y_hat ≈ beta0 + beta1 * age
-```
-
-then:
-
-```text
-RAA = y_hat - (beta0 + beta1 * age)
-```
-
-This is a **post hoc calibration** intended to remove systematic age trends in prediction error.
-
-### 3) ClockSHAP deviation (age-matched deviation; predicted − expected)
-
-ClockSHAP uses the **age-conditioned** target:
-
-```text
-deviation = y_hat - y_exp(age)
-```
-
-Naming map (ClockSHAP object fields):
-```text
-predicted = y_hat
-expected  = y_exp(age)
-deviation = predicted - expected
-phi       = per-feature contributions (summing to deviation)
-```
-
-Key invariant (per sample i):
-```text
-sum_k phi_i[k] = deviation_i
-```
-
-where `y_exp(age)` (stored as `expected`) is computed by applying the *same clock* to an **age-conditioned reference profile** (see “How expected is defined” below).
-
-#### Why this can reduce age bias without an extra regression step
-
-- `deviation = y_hat − y_exp(age)` subtracts an **age-matched baseline** instead of subtracting chronological age directly. This avoids the classic regression-to-the-mean artifact that makes `AAA = y_hat − age` systematically positive at young ages and negative at old ages when the clock slope is < 1.
-- In practice, this helps when `y_exp(age)` tracks the **typical clock output at that age** in the reference setting (i.e., it behaves like an age-conditional expectation for the reference). If cross-cohort effects or biology cause the clock’s age-trend to differ strongly between the reference and the target, `deviation` may still show residual age trends (which should be interpreted as reference mismatch and/or biological decoupling, depending on context).
-
-#### Relationship to relative age acceleration (RAA)
-
-- RAA is often defined as residuals from `lm(y_hat ~ age)` in some cohort. ClockSHAP’s `deviation` is similar in spirit: it measures how far a sample’s clock output lies above/below the **age-conditional expectation**, except that ClockSHAP defines that expectation through a **feature-level reference profile** rather than a regression on `y_hat`.
-- Because of this difference in how the expectation is constructed, `deviation` and regression residuals are not guaranteed to match in all settings. They will be numerically close when `y_exp(age)` closely approximates the cohort’s age-conditional mean clock output.
-- In the default setup used here (linear-additive clock; reference profile fit as per-feature linear trends `gamma0 + gamma1 * age`), `y_exp(age)` is linear in age, so `deviation` often matches the residual from a reference-cohort fit of `y_hat ~ age` (as we observed in our GTEx→TCGA application).
-
-
-**Reference note:** `expected` (and thus `deviation`) is **reference-anchored** (e.g., a specific GTEx tissue-of-origin). This quantity is not a universal biological-age score.
-
-**Interpretation note:** `deviation` is a cross-sectional **state shift** relative to an age-matched reference expectation; it does not by itself imply a within-individual aging *rate*.
-
-**Naming note:** we recommend calling this quantity **“deviation”** or **“age-matched deviation”** (and using AAA / RAA only when you explicitly mean those definitions).
-
-
-
-## Why we call it “SHAP”
-
-For **linear-additive models**, SHAP-style additive attributions have a closed-form expression.
-
-Write the clock on standardized features:
+For **linear-additive models**, SHAP-style additive attributions have a closed form. Writing the clock on standardized features:
 
 ```text
 y_hat = alpha + sum_k beta[k] * z[k]
 z[k]  = (x[k] - mu[k]) / sigma[k]
 ```
 
-Given a baseline standardized feature vector `z_ref`, linear-model SHAP values reduce to:
+Given a standardized baseline `z_ref`, linear-model SHAP values reduce to:
 
 ```text
-phi[k] = beta[k] * ( z[k] - z_ref[k] )
+phi[k]        = beta[k] * ( z[k] - z_ref[k] )
+sum_k phi[k]  = y_hat(x) - y_hat(z_ref)
 ```
 
-and additivity holds exactly:
+ClockSHAP sets the baseline using the age-conditioned reference profile:
 
 ```text
-sum_k phi[k] = y_hat(x) - y_hat(z_ref)
-```
+x_ref[k](age)     = gamma0[k] + gamma1[k] * age
+z_ref[k](age)     = ( x_ref[k](age) - mu[k] ) / sigma[k]
 
-### The ClockSHAP twist: the baseline depends on age
-
-In aging clocks, the most meaningful baseline depends on chronological age. ClockSHAP sets the baseline using the reference profile:
-
-```text
-x_ref[k](age) = gamma0[k] + gamma1[k] * age
-z_ref[k](age) = ( x_ref[k](age) - mu[k] ) / sigma[k]
-```
-
-So ClockSHAP uses:
-
-```text
-y_exp(age)   = alpha + sum_k beta[k] * z_ref[k](age)
-phi[k](age)  = beta[k] * ( z[k] - z_ref[k](age) )
-deviation    = y_hat - y_exp(age)
+y_exp(age)        = alpha + sum_k beta[k] * z_ref[k](age)
+phi[k](age)       = beta[k] * ( z[k] - z_ref[k](age) )
 sum_k phi[k](age) = deviation
 ```
 
 This preserves exact additivity while making the baseline biologically appropriate for aging-clock interpretation.
 
-**Implementation note:** `phi` is computed relative to the age-conditioned baseline defined by the reference profile (`gamma0/gamma1`). Changing the reference changes `expected(age)` and therefore changes the decomposition target (`deviation`).
+**Implementation note.** Changing the reference changes `expected(age)` and therefore changes the decomposition target. Every component of the output is reference-anchored.
 
-**Practical access:** `clockshap()` returns a `clockshap` object (a list). You can access fields directly (e.g., `cs$phi`, `cs$deviation`). Optional accessors can be provided for API stability across versions.
+### Terminology: deviation vs. AAA vs. RAA
 
+ClockSHAP explains **`predicted − expected`**, not raw prediction error. Two other quantities are commonly used in the aging-clock literature, and it is worth being explicit about which one ClockSHAP targets.
 
-## What ClockSHAP returns
+**Absolute age acceleration (AAA, sometimes called ΔAge):**
 
-`clockshap()` returns a `clockshap` object (a list) with:
+```text
+AAA = y_hat - age
+```
 
-- `predicted`: clock predicted age (`y_hat`)
-- `expected`: expected predicted age at the same chronological age under the reference (`y_exp(age)`)
-- `deviation`: `predicted - expected` (age-matched deviation)
-- `phi`: per-feature contributions that sum to `deviation`
-- `age`: the input chronological age vector
+Simple, but age-biased when the clock has slope < 1: younger samples get over-predicted and older samples under-predicted.
 
-Direct access (recommended for most users):
+**Relative age acceleration (RAA, regression residuals):**
 
 ```r
-cs <- clockshap(features, age, clock, reference)
-
-cs$phi
-cs$deviation
-cs$predicted
-cs$expected
-cs$age
+RAA <- residuals(stats::lm(predicted ~ age))
 ```
+
+A post hoc calibration that removes systematic age trends in prediction error within a chosen cohort.
+
+**ClockSHAP deviation (`predicted − expected`):**
+
+Similar in spirit to RAA, but the age-conditional expectation is built through a **feature-level reference profile** (`gamma0 + gamma1 * age` per feature, then passed through the clock) rather than via regression on `y_hat`. In the default setup (linear clock, linear per-feature reference trends), `y_exp(age)` is linear in age, so `deviation` often matches the residual from a reference-cohort fit of `y_hat ~ age` numerically — as we observed in our GTEx → TCGA application.
+
+When the reference and target cohorts have different age trends (cross-cohort effects, biological decoupling), `deviation` and RAA can diverge, and that divergence is itself interpretable as reference mismatch.
+
+We recommend the name **"deviation"** or **"age-matched deviation"** to keep this distinct from AAA and RAA.
+
+---
 
 ## Practical notes
 
-- **Deviation is reference-dependent.** Your choice of reference cohort/profile defines what “expected for age” means.
-- **“Years” are clock-relative.** A deviation of +5 under one clock is not guaranteed comparable to +5 under a different clock, training set, or feature space.
-- **Upstream preprocessing matters.** ClockSHAP assumes the feature matrix is already analysis-ready and consistent with the clock (transformations, normalization, feature matching, batch correction, QC).
-The *importance of this step can not be overstated*!! Mismatching feature spaces, normalization steps, or batch effects can lead to technical rather than biological deviations. 
+- **Deviation is reference-dependent.** Choice of reference cohort defines what "expected for age" means.
+- **"Years" are clock-relative.** A deviation of +5 under one clock is not comparable to +5 under a different clock, training set, or feature space.
+- **Upstream preprocessing matters — a lot.** ClockSHAP assumes the feature matrix is analysis-ready and consistent with the clock (transformations, normalization, feature matching, batch correction, QC). Mismatched feature spaces or batch effects produce technical, not biological, deviations. The importance of this step cannot be overstated.
 
-For broader discussion of calibration, age bias, and computational challenges in clock analysis, see:
+For broader discussion of calibration, age bias, and computational challenges in clock analysis, see [Epigenetic ageing clocks: statistical methods and emerging computational challenges](https://doi.org/10.1038/s41576-024-00807-w) (Nature Reviews Genetics).
 
-- Epigenetic ageing clocks: statistical methods and emerging computational challenges (Nature Reviews Genetics). https://doi.org/10.1038/s41576-024-00807-w
+---
 
 ## Status
 
-This package is under active development.
+Under active development.

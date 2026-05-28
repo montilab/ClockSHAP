@@ -19,3 +19,6 @@ vignettes/*.pdf
 .httr-oauth
 .DS_Store
 .quarto/
+
+# Local user inputs (do not commit)
+input/
