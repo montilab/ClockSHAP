@@ -452,6 +452,33 @@ test_that("fit_reference_profile recovers coefficients for perfectly linear data
 })
 
 
+test_that("clockshap_example runs end to end", {
+
+  data(clockshap_example, package = "ClockSHAP")
+
+  expect_named(clockshap_example, c("features", "age", "clock"))
+  expect_equal(dim(clockshap_example$features), c(120, 8))
+  expect_identical(names(clockshap_example$age), rownames(clockshap_example$features))
+  expect_s3_class(clockshap_example$clock, "linear_clock")
+
+  ref <- fit_reference_profile(
+    features = as.data.frame(clockshap_example$features),
+    age = clockshap_example$age
+  )
+  cs <- clockshap(
+    features = clockshap_example$features,
+    age = clockshap_example$age,
+    clock = clockshap_example$clock,
+    reference = ref
+  )
+
+  expect_gt(cor(cs$predicted, clockshap_example$age), 0.8)
+  expect_equal(unname(rowSums(cs$phi)), unname(cs$deviation), tolerance = 1e-10)
+  expect_gt(cs$deviation[1], 0)
+  expect_lt(cs$deviation[2], 0)
+})
+
+
 test_that("Accessors return the expected components", {
 
   features <- matrix(rnorm(12), nrow = 4, ncol = 3)

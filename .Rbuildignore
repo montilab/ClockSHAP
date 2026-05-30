@@ -1,3 +1,7 @@
 ^ClockSHAP\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^\.github$
+^data-raw$
+^input$
+^dummy-waterfall.*\.png$

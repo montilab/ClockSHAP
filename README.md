@@ -72,34 +72,32 @@ remotes::install_github("montilab/ClockSHAP")
 
 ## Quick start
 
+Here is the core workflow using the bundled synthetic `clockshap_example` dataset.
+
 ```r
 library(ClockSHAP)
-set.seed(1)
-
-features <- matrix(rnorm(20), nrow = 5, ncol = 4)
-colnames(features) <- paste0("F", 1:4)
-age <- c(40, 50, 60, 70, 80)
-
-clock <- linear_clock(
-  alpha = 10,
-  beta  = setNames(runif(4), colnames(features)),
-  mu    = setNames(rep(0, 4), colnames(features)),
-  sigma = setNames(rep(1, 4), colnames(features))
-)
 
 ref <- fit_reference_profile(
-  features = as.data.frame(features),
-  age = age
+  features = as.data.frame(clockshap_example$features),
+  age      = clockshap_example$age
 )
 
-cs <- clockshap(features = features, age = age, clock = clock, reference = ref)
+cs <- clockshap(
+  features  = clockshap_example$features,
+  age       = clockshap_example$age,
+  clock     = clockshap_example$clock,
+  reference = ref
+)
 
 cs$phi
 cs$deviation
 cs$predicted
 cs$expected
 
-plot_clockshap_waterfall(cs, sample = 1, top_n = 10)
+cor(cs$predicted, clockshap_example$age)
+max(abs(rowSums(cs$phi) - cs$deviation))
+
+plot_clockshap_waterfall(cs, sample = "S001", top_n = 6)
 ```
 
 The returned `clockshap` object is a list with five fields:
