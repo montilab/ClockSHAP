@@ -30,54 +30,31 @@ age-matched deviation. Figure from \[Bock et al., in preparation\].*
 
 ## What you get out of ClockSHAP
 
-For each sample, ClockSHAP returns its **age-matched deviation** ; how
+For each sample, ClockSHAP returns its **age-matched deviation** (how
 far the predicted clock age sits above or below what is expected at that
-chronological age, together with a set of **per-feature contributions
-that sum exactly to that deviation**.
+chronological age) together with **per-feature contributions that sum
+exactly to that deviation**.
 
-The figure above shows this on real lung-tissue data for a pathway-level transcriptomic clock. The positive
-deviator (Panel C) is predicted about 4.7 years older than expected for
-its age, and ClockSHAP attributes that gap to specific programs:
-epithelial–mesenchymal transition (+1.9 years), fatty-acid metabolism
-(+0.9), G2M checkpoint and hypoxia (+0.5 each), and so on. The negative
-deviator (Panel D) reads about 4.9 years younger, driven largely by low
-EMT (−4.0) partly offset by angiogenesis (+2.5). In both cases the
-per-feature contributions add up *exactly* to the sample’s deviation.
-That additivity is a guarantee of the method, not an approximation.
+The figure above shows this on real lung-tissue data for a pathway-level
+transcriptomic clock. The positive deviator (Panel C) reads about 4.7
+years older than expected, attributed to programs such as
+epithelial–mesenchymal transition (+1.9 years) and fatty-acid metabolism
+(+0.9); the negative deviator (Panel D) reads about 4.9 years younger,
+driven largely by low EMT (−4.0). In both cases the contributions sum
+*exactly* to the deviation, a guarantee of the method rather than an
+approximation.
 
-This output drops into downstream analyses: cohort-level comparisons of
-which features drive deviation, deep dives on individual samples, or
+This output feeds downstream analyses: comparing which features drive
+deviation across a cohort, deep dives on individual samples, or
 hypothesis generation about which biological programs are differentially
 engaged.
 
-A note on this figure specifically: because the reference is the
-GTEx-LUNG cohort itself, the deviations shown are *exactly* the commonly
-used **relative age acceleration** (RAA) — the residual of predicted age
-regressed on chronological age, which is why Panel A’s mean deviation is
-zero. See
+Because the reference here is the GTEx-LUNG cohort itself, the
+deviations shown are *exactly* the commonly used **relative age
+acceleration** (RAA), the residual of predicted age regressed on
+chronological age, which is why Panel A’s mean deviation is zero. See
 [Terminology: deviation vs. AAA
 vs. RAA](#terminology-deviation-vs-aaa-vs-raa) below for the details.
-
-------------------------------------------------------------------------
-
-## How it works (in two lines)
-
-ClockSHAP is built around two identities. The first defines what it
-explains — the age-matched deviation of a sample’s predicted age from
-its age-matched expectation:
-
-$$\Delta_i = \hat{y}_i - \mathrm{E}[\hat{y} \mid \mathrm{Age}_i]$$
-
-The second is the exact additive decomposition of that deviation into
-per-feature contributions:
-
-$$\sum_k \phi_{i,k} = \Delta_i$$
-
-Here $\hat{y}_i$ is the clock’s predicted age,
-$\mathrm{E}[\hat{y} \mid \mathrm{Age}_i]$ is the age-matched expectation
-under a reference, and $\phi_{i,k}$ is the contribution of feature $k$.
-Everything below is about how the expectation and the contributions are
-defined, and why the decomposition is exact.
 
 ------------------------------------------------------------------------
 
@@ -124,13 +101,34 @@ plot_clockshap_waterfall(cs, sample = 1, top_n = 6)
 
 The returned `clockshap` object is a list with five fields:
 
--   `predicted` — clock prediction $\hat{y}$
--   `expected` — age-matched expectation
+-   `predicted`: clock prediction $\hat{y}$
+-   `expected`: age-matched expectation
     $\mathrm{E}[\hat{y} \mid \mathrm{Age}]$ under the reference
--   `deviation` — `predicted - expected` ($\Delta$)
--   `phi` — per-feature contribution matrix (rows sum exactly to
+-   `deviation`: `predicted - expected` ($\Delta$)
+-   `phi`: per-feature contribution matrix (rows sum exactly to
     `deviation`)
--   `age` — input chronological ages
+-   `age`: input chronological ages
+
+------------------------------------------------------------------------
+
+## How it works (in two lines)
+
+ClockSHAP is built around two identities. The first defines what it
+explains: the age-matched deviation of a sample’s predicted age from its
+age-matched expectation,
+
+$$\Delta_i = \hat{y}_i - \mathrm{E}[\hat{y} \mid \mathrm{Age}_i]$$
+
+The second is the exact additive decomposition of that deviation into
+per-feature contributions,
+
+$$\sum_k \phi_{i,k} = \Delta_i$$
+
+Here $\hat{y}$ is the clock’s predicted age,
+$\mathrm{E}[\hat{y} \mid \mathrm{Age}]$ is the age-matched expectation
+under a reference, and $\phi$ is a single feature’s contribution.
+Everything below is about how the expectation and the contributions are
+defined, and why the decomposition is exact.
 
 ------------------------------------------------------------------------
 
@@ -175,7 +173,7 @@ imply a within-individual aging *rate*.
 
 For **linear-additive models**, SHAP-style attributions have a closed
 form. ClockSHAP’s per-feature contribution is the feature’s clock weight
-$w_k$ times its distance from the age-expected value — the form shown in
+$w_k$ times its distance from the age-expected value, the form shown in
 Panel B of the figure above:
 
 $$\phi_{i,k} = w_k\big(x_{i,k} - \mathrm{E}[X_k \mid \mathrm{Age}_i]\big)$$
@@ -187,7 +185,7 @@ $$\sum_k \phi_{i,k} = \Delta_i$$
 **Implementation note.** In practice the features are standardized to
 the clock’s training distribution (mean and standard deviation) before
 the decomposition is computed. Changing the reference changes the
-expectation, and therefore the decomposition target — so every component
+expectation, and therefore the decomposition target, so every component
 is reference-anchored.
 
 ### Terminology: deviation vs. AAA vs. RAA
@@ -200,7 +198,7 @@ literature:
 
 $$\mathrm{AAA} = \hat{y} - \mathrm{Age}$$
 
-Simple, but age-biased when the clock slope is below 1 — younger samples
+Simple, but age-biased when the clock slope is below 1: younger samples
 are over-predicted and older samples under-predicted.
 
 **Relative age acceleration (RAA, regression residuals):**
@@ -242,7 +240,7 @@ keep this distinct from AAA and RAA.
 -   **“Years” are clock-relative.** A deviation of +5 under one clock is
     not comparable to +5 under a different clock, training set, or
     feature space.
--   **Upstream preprocessing matters — a lot.** ClockSHAP assumes the
+-   **Upstream preprocessing matters a lot.** ClockSHAP assumes the
     feature matrix is analysis-ready and consistent with the clock
     (transformations, normalization, feature matching, batch correction,
     QC). Mismatched feature spaces or batch effects produce technical,
