@@ -12,54 +12,77 @@ It answers a single question:
 > **Why is this sample predicted to be biologically older or younger
 > than expected for its chronological age?**
 
-The method was developed in the context of tissue-anchored
-transcriptomic aging clocks but is designed to support comparative aging
-analyses across diverse clock contexts.
+The method was developed for tissue-anchored transcriptomic aging clocks
+but is designed to support comparative aging analyses across diverse
+clock contexts.
+
+![ClockSHAP method overview](man/figures/clockshap-overview.png)
+
+*ClockSHAP applied to a lung-tissue aging clock on real GTEx-LUNG data.
+(A) Predicted vs. chronological age across the cohort, with one positive
+and one negative deviator highlighted. (B) A single feature’s
+contribution, computed as its clock weight times its distance from the
+age-expected value. (C, D) The full per-feature decompositions for the
+two deviators, with contributions summing exactly to each sample’s
+age-matched deviation. Figure from \[Bock et al., in preparation\].*
 
 ------------------------------------------------------------------------
 
 ## What you get out of ClockSHAP
 
-For each sample, ClockSHAP returns a per-feature decomposition of how
-far that sample lies above or below the clock’s age-matched expectation.
-A worked example:
+For each sample, ClockSHAP returns its **age-matched deviation** ; how
+far the predicted clock age sits above or below what is expected at that
+chronological age, together with a set of **per-feature contributions
+that sum exactly to that deviation**.
 
-    #> Sample                : S001
-    #> Chronological age     : 80 years
-    #> Predicted clock age   : 81.0 years
-    #> Expected for that age : 75.5 years
-    #> Age-matched deviation : +5.5 years
-    #> Per-gene contributions (phi), top drivers:
-    #> CDKN2A  GDF15    IL6  EDA2R  LMNB1 COL1A1  FOXO3    ELN
-    #>   2.38   2.13   0.98   0.06   0.03   0.02  -0.04  -0.05
+The figure above shows this on real lung-tissue data. The positive
+deviator (Panel C) is predicted about 4.7 years older than expected for
+its age, and ClockSHAP attributes that gap to specific programs:
+epithelial–mesenchymal transition (+1.9 years), fatty-acid metabolism
+(+0.9), G2M checkpoint and hypoxia (+0.5 each), and so on. The negative
+deviator (Panel D) reads about 4.9 years younger, driven largely by low
+EMT (−4.0) partly offset by angiogenesis (+2.5). In both cases the
+per-feature contributions add up *exactly* to the sample’s deviation.
+That additivity is a guarantee of the method, not an approximation.
 
-This sample reads about 5.5 clock-years older than expected for its age
-in the reference, driven by elevated CDKN2A, GDF15, and IL6 — a
-senescence/inflammaging signature.
-
-This output drops into downstream analyses — cohort-level comparisons of
+This output drops into downstream analyses: cohort-level comparisons of
 which features drive deviation, deep dives on individual samples, or
 hypothesis generation about which biological programs are differentially
 engaged.
 
-`plot_clockshap_waterfall(cs, sample = i)` renders this decomposition as
-a waterfall plot.
+The figure uses real pathway-level features; the bundled synthetic
+`clockshap_example` dataset (used in the Quick start below) lets you
+reproduce the same mechanics on a small gene-level example.
 
-<img src="man/figures/README-worked-example-waterfall-1.png" alt="Waterfall of sample S001 per-gene contributions summing to its age-matched deviation" width="100%" />
+A note on this figure specifically: because the reference is the
+GTEx-LUNG cohort itself, the deviations shown are *exactly* the commonly
+used **relative age acceleration** (RAA) — the residual of predicted age
+regressed on chronological age, which is why Panel A’s mean deviation is
+zero. ClockSHAP’s deviation departs from RAA, and starts carrying new
+biological signal, only when the reference is a *different* cohort. See
+[Terminology: deviation vs. AAA
+vs. RAA](#terminology-deviation-vs-aaa-vs-raa) below for the details.
 
 ------------------------------------------------------------------------
 
 ## How it works (in two lines)
 
-ClockSHAP is built around two equations:
+ClockSHAP is built around two identities. The first defines what it
+explains — the age-matched deviation of a sample’s predicted age from
+its age-matched expectation:
 
-``` text
-deviation     = predicted - expected
-sum_k phi[k]  = deviation
-```
+$$\Delta_i = \hat{y}_i - \mathrm{E}[\hat{y} \mid \mathrm{Age}_i]$$
 
-Everything else in this README is about how `expected` and `phi` are
-defined and why the additive decomposition holds exactly.
+The second is the exact additive decomposition of that deviation into
+per-feature contributions:
+
+$$\sum_k \phi_{i,k} = \Delta_i$$
+
+Here $\hat{y}_i$ is the clock’s predicted age,
+$\mathrm{E}[\hat{y} \mid \mathrm{Age}_i]$ is the age-matched expectation
+under a reference, and $\phi_{i,k}$ is the contribution of feature $k$.
+Everything below is about how the expectation and the contributions are
+defined, and why the decomposition is exact.
 
 ------------------------------------------------------------------------
 
@@ -79,8 +102,7 @@ remotes::install_github("montilab/ClockSHAP")
 
 ## Quick start
 
-Here is the core workflow using the bundled synthetic
-`clockshap_example` dataset.
+The core workflow, on the bundled synthetic `clockshap_example` dataset:
 
 ``` r
 library(ClockSHAP)
@@ -91,7 +113,7 @@ ref <- fit_reference_profile(
   age      = clockshap_example$age
 )
 
-# Decompose each sample's age-matched deviation into per-gene contributions
+# Decompose each sample's age-matched deviation into per-feature contributions
 cs <- clockshap(
   features  = clockshap_example$features,
   age       = clockshap_example$age,
@@ -99,16 +121,18 @@ cs <- clockshap(
   reference = ref
 )
 
-# Then inspect a sample, e.g.:
-# plot_clockshap_waterfall(cs, sample = 1)
+# Inspect one sample's decomposition as a waterfall
+plot_clockshap_waterfall(cs, sample = 1, top_n = 6)
 ```
+
+<img src="man/figures/README-quick-start-1.png" alt="Waterfall decomposition of one synthetic sample's age-matched deviation into per-gene contributions" width="100%" />
 
 The returned `clockshap` object is a list with five fields:
 
--   `predicted` — clock prediction `y_hat`
--   `expected` — age-matched expectation `y_exp(age)` under the
-    reference
--   `deviation` — `predicted - expected`
+-   `predicted` — clock prediction $\hat{y}$
+-   `expected` — age-matched expectation
+    $\mathrm{E}[\hat{y} \mid \mathrm{Age}]$ under the reference
+-   `deviation` — `predicted - expected` ($\Delta$)
 -   `phi` — per-feature contribution matrix (rows sum exactly to
     `deviation`)
 -   `age` — input chronological ages
@@ -117,97 +141,72 @@ The returned `clockshap` object is a list with five fields:
 
 ## The building blocks
 
-The rest of this README explains the two equations above:
+The rest of this README explains the two identities above:
 
--   What `expected` means (the reference profile)
--   Why per-feature `phi` values exist and sum exactly to `deviation`
-    (the SHAP property)
--   How `deviation` differs from other clock-acceleration metrics (AAA,
-    RAA)
+-   what `expected` means (the reference profile),
+-   why the per-feature contributions $\phi_k$ sum exactly to the
+    deviation (the SHAP property),
+-   how the deviation differs from other clock-acceleration metrics
+    (AAA, RAA).
 
 ### How `expected` is defined: the reference profile
 
-Aging-clock features change systematically with chronological age. A
-single global mean baseline is inappropriate for comparing samples of
-different ages, so ClockSHAP uses an **age-conditioned reference**.
+Aging-clock features change systematically with chronological age, so a
+single global baseline is inappropriate for comparing samples of
+different ages. ClockSHAP instead uses an **age-conditioned reference**.
+For each feature $k$ it fits an age trend on a reference cohort:
 
-For each feature `k`, we fit an age trend on a reference cohort:
+$$\mathrm{E}[X_k \mid \mathrm{Age}] = \gamma_{0,k} + \gamma_{1,k}\,\mathrm{Age}$$
 
-``` text
-x_ref[k](age) = gamma0[k] + gamma1[k] * age
-```
+Passing this age-expected feature vector through the clock $f$ gives the
+age-matched expectation, and the deviation is the gap from it:
 
-`gamma0[k]` and `gamma1[k]` are stored in the `reference_profile`
-object. Given a clock `f` mapping features to predicted age:
-
-``` text
-y_exp(age)  = f( x_ref(age) )
-deviation   = y_hat - y_exp(age)
-```
+$$\mathrm{E}[\hat{y} \mid \mathrm{Age}] = f\big(\mathrm{E}[X \mid \mathrm{Age}]\big), \qquad \Delta = \hat{y} - \mathrm{E}[\hat{y} \mid \mathrm{Age}]$$
 
 So `expected` is the clock’s *typical output for reference individuals
-of the same chronological age*, and `deviation` is how far above or
-below that age-matched expectation a sample lies.
+of the same chronological age*, and the deviation is how far above or
+below that a sample lies.
 
 **Reference note.** Because `expected` depends on the chosen reference
-(e.g., GTEx tissue-of-origin), `deviation` should be interpreted
-**relative to that reference**. It is not a universal biological-age
+(e.g., GTEx tissue-of-origin), the deviation should be interpreted
+**relative to that reference**; it is not a universal biological-age
 score.
 
-**Interpretation note.** `deviation` is a cross-sectional **state
+**Interpretation note.** The deviation is a cross-sectional **state
 shift** relative to an age-matched expectation; it does not by itself
 imply a within-individual aging *rate*.
 
-### Why per-feature contributions sum exactly to `deviation`: the SHAP property
+### Why the contributions sum exactly to the deviation: the SHAP property
 
-For **linear-additive models**, SHAP-style additive attributions have a
-closed form. Writing the clock on standardized features:
+For **linear-additive models**, SHAP-style attributions have a closed
+form. ClockSHAP’s per-feature contribution is the feature’s clock weight
+$w_k$ times its distance from the age-expected value — the form shown in
+Panel B of the figure above:
 
-``` text
-y_hat = alpha + sum_k beta[k] * z[k]
-z[k]  = (x[k] - mu[k]) / sigma[k]
-```
+$$\phi_{i,k} = w_k\big(x_{i,k} - \mathrm{E}[X_k \mid \mathrm{Age}_i]\big)$$
 
-Given a standardized baseline `z_ref`, linear-model SHAP values reduce
-to:
+Summed over features, the contributions recover the deviation exactly:
 
-``` text
-phi[k]        = beta[k] * ( z[k] - z_ref[k] )
-sum_k phi[k]  = y_hat(x) - y_hat(z_ref)
-```
+$$\sum_k \phi_{i,k} = \Delta_i$$
 
-ClockSHAP sets the baseline using the age-conditioned reference profile:
-
-``` text
-x_ref[k](age)     = gamma0[k] + gamma1[k] * age
-z_ref[k](age)     = ( x_ref[k](age) - mu[k] ) / sigma[k]
-
-y_exp(age)        = alpha + sum_k beta[k] * z_ref[k](age)
-phi[k](age)       = beta[k] * ( z[k] - z_ref[k](age) )
-sum_k phi[k](age) = deviation
-```
-
-This preserves exact additivity while making the baseline biologically
-appropriate for aging-clock interpretation.
-
-**Implementation note.** Changing the reference changes `expected(age)`
-and therefore changes the decomposition target. Every component of the
-output is reference-anchored.
+**Implementation note.** In practice the features are standardized to
+the clock’s training distribution (mean and standard deviation) before
+the decomposition is computed. Changing the reference changes the
+expectation, and therefore the decomposition target — so every component
+is reference-anchored.
 
 ### Terminology: deviation vs. AAA vs. RAA
 
-ClockSHAP explains **`predicted − expected`**, not raw prediction error.
-Two other quantities are commonly used in the aging-clock literature,
-and it is worth being explicit about which one ClockSHAP targets.
+ClockSHAP explains $\Delta = \text{predicted} - \text{expected}$, not
+raw prediction error. Two other quantities appear in the aging-clock
+literature:
 
 **Absolute age acceleration (AAA, sometimes called ΔAge):**
 
-``` text
-AAA = y_hat - age
-```
+$$\mathrm{AAA} = \hat{y} - \mathrm{Age}$$
 
-Simple, but age-biased when the clock has slope &lt; 1: younger samples
-get over-predicted and older samples under-predicted.
+Simple, but age-biased when the clock slope is below 1 — younger samples
+are over-predicted and older samples under-predicted.
 
 **Relative age acceleration (RAA, regression residuals):**
 
@@ -215,27 +214,26 @@ get over-predicted and older samples under-predicted.
 RAA <- residuals(stats::lm(predicted ~ age))
 ```
 
-A post hoc calibration that removes systematic age trends in prediction
+A post-hoc calibration that removes systematic age trends in prediction
 error within a chosen cohort.
 
-**ClockSHAP deviation (`predicted − expected`):**
-
-ClockSHAP’s `deviation` generalizes RAA. The age-conditional expectation
-is built through a **feature-level reference profile** (per-feature OLS
-trends `gamma0 + gamma1 * age`, passed through the clock) rather than by
-regressing `y_hat` on age directly. This has an exact special case:
-**for a linear-additive clock, when the reference profile is fit on the
-cohort of interest itself, `deviation` equals RAA sample-for-sample.**
-Because `y_hat` is an exact linear function of the features and OLS
-projection onto age is linear, passing the per-feature age trends
-through the clock reproduces the OLS fit of `y_hat ~ age` exactly, so
-`predicted − expected = predicted − fitted = residual = RAA`.
+**ClockSHAP deviation.** ClockSHAP’s $\Delta$ generalizes RAA. The
+age-conditional expectation is built through a **feature-level reference
+profile** ($\gamma_0 + \gamma_1\,\mathrm{Age}$ per feature, passed
+through the clock) rather than by regressing $\hat{y}$ on age directly.
+This has an exact special case: **for a linear-additive clock, when the
+reference is fit on the cohort of interest itself, $\Delta$ equals RAA
+sample-for-sample.** Because $\hat{y}$ is an exact linear function of
+the features and OLS projection onto age is linear, passing the
+per-feature age trends through the clock reproduces the OLS fit of
+$\hat{y} \sim \mathrm{Age}$ exactly, so
+$\text{predicted} - \text{expected} = \text{predicted} - \text{fitted} = \text{residual} = \mathrm{RAA}$.
 
 The purpose of ClockSHAP is what happens when the reference is set to a
 *different*, biologically meaningful cohort (e.g., GTEx
-tissue-of-origin). `expected` is then anchored to normal aging in that
-reference rather than to the target cohort’s own internal trend, and
-`deviation` measures departure from that external expectation.
+tissue-of-origin): `expected` is then anchored to normal aging in that
+reference rather than to the target cohort’s own internal trend, and the
+deviation measures departure from that external expectation.
 
 We recommend the name **“deviation”** or **“age-matched deviation”** to
 keep this distinct from AAA and RAA.
@@ -244,7 +242,7 @@ keep this distinct from AAA and RAA.
 
 ## Practical notes
 
--   **Deviation is reference-dependent.** Choice of reference cohort
+-   **Deviation is reference-dependent.** The choice of reference cohort
     defines what “expected for age” means.
 -   **“Years” are clock-relative.** A deviation of +5 under one clock is
     not comparable to +5 under a different clock, training set, or
