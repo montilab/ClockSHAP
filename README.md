@@ -50,16 +50,11 @@ which features drive deviation, deep dives on individual samples, or
 hypothesis generation about which biological programs are differentially
 engaged.
 
-The figure uses real pathway-level features; the bundled synthetic
-`clockshap_example` dataset (used in the Quick start below) lets you
-reproduce the same mechanics on a small gene-level example.
-
 A note on this figure specifically: because the reference is the
 GTEx-LUNG cohort itself, the deviations shown are *exactly* the commonly
 used **relative age acceleration** (RAA) — the residual of predicted age
 regressed on chronological age, which is why Panel A’s mean deviation is
-zero. ClockSHAP’s deviation departs from RAA, and starts carrying new
-biological signal, only when the reference is a *different* cohort. See
+zero. See
 [Terminology: deviation vs. AAA
 vs. RAA](#terminology-deviation-vs-aaa-vs-raa) below for the details.
 
