@@ -35,7 +35,7 @@ far the predicted clock age sits above or below what is expected at that
 chronological age, together with a set of **per-feature contributions
 that sum exactly to that deviation**.
 
-The figure above shows this on real lung-tissue data. The positive
+The figure above shows this on real lung-tissue data for a pathway-level transcriptomic clock. The positive
 deviator (Panel C) is predicted about 4.7 years older than expected for
 its age, and ClockSHAP attributes that gap to specific programs:
 epithelial–mesenchymal transition (+1.9 years), fatty-acid metabolism
