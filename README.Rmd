@@ -59,12 +59,30 @@ remotes::install_github("montilab/ClockSHAP")
 
 ## Quick start
 
-The core workflow, on the bundled synthetic `clockshap_example` dataset:
+ClockSHAP needs three things: a **feature matrix** (samples in rows, features in columns), a vector of **chronological ages** (one per sample), and a **clock** describing how those features map to predicted age. The bundled `clockshap_example` supplies all three, so we can look at the expected shapes first:
 
-```{r quick-start, fig.alt = "Waterfall decomposition of one synthetic sample's age-matched deviation into per-gene contributions"}
+```{r inputs}
 library(ClockSHAP)
 
-# Age-conditioned reference profile (defines "expected for age")
+# Features: rows are samples, columns are the clock's features.
+# (If your matrix is genes x samples, transpose it first.)
+clockshap_example$features[1:3, 1:4]
+
+# One chronological age per sample
+head(data.frame(
+  sample = names(clockshap_example$age),
+  age    = unname(clockshap_example$age)
+))
+
+# The clock: an intercept (alpha), per-feature weights (beta), and the
+# training mean/SD used to standardize each feature (mu, sigma)
+str(clockshap_example$clock)
+```
+
+For your own model you build this object with `linear_clock(alpha, beta, mu, sigma)` from its fitted coefficients; the feature columns just have to be named to match. With those inputs in hand, the workflow is three calls: fit an age-conditioned reference from the data, run the decomposition, and inspect a sample.
+
+```{r quick-start, fig.alt = "Waterfall decomposition of one synthetic sample's age-matched deviation into per-gene contributions"}
+# Age-conditioned reference profile (defines "expected for age"), fit from the data
 ref <- fit_reference_profile(
   features = as.data.frame(clockshap_example$features),
   age      = clockshap_example$age

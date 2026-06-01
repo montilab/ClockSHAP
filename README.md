@@ -74,12 +74,58 @@ remotes::install_github("montilab/ClockSHAP")
 
 ## Quick start
 
-The core workflow, on the bundled synthetic `clockshap_example` dataset:
+ClockSHAP needs three things: a **feature matrix** (samples in rows,
+features in columns), a vector of **chronological ages** (one per
+sample), and a **clock** describing how those features map to predicted
+age. The bundled `clockshap_example` supplies all three, so we can look
+at the expected shapes first:
 
 ``` r
 library(ClockSHAP)
 
-# Age-conditioned reference profile (defines "expected for age")
+# Features: rows are samples, columns are the clock's features.
+# (If your matrix is genes x samples, transpose it first.)
+clockshap_example$features[1:3, 1:4]
+#>        CDKN2A    GDF15    EDA2R      IL6
+#> S001 7.034590 7.851806 5.223082 6.046552
+#> S002 5.641907 6.397235 5.266366 4.738019
+#> S003 5.293459 6.050086 3.950593 4.233756
+
+# One chronological age per sample
+head(data.frame(
+  sample = names(clockshap_example$age),
+  age    = unname(clockshap_example$age)
+))
+#>   sample  age
+#> 1   S001 80.3
+#> 2   S002 81.5
+#> 3   S003 45.7
+#> 4   S004 75.7
+#> 5   S005 65.3
+#> 6   S006 58.6
+
+# The clock: an intercept (alpha), per-feature weights (beta), and the
+# training mean/SD used to standardize each feature (mu, sigma)
+str(clockshap_example$clock)
+#> List of 4
+#>  $ alpha: num 59
+#>  $ beta : Named num [1:8] 3.43 3.08 2.65 1.67 -2.08 ...
+#>   ..- attr(*, "names")= chr [1:8] "CDKN2A" "GDF15" "EDA2R" "IL6" ...
+#>  $ mu   : Named num [1:8] 5.34 6.23 4.46 4.6 5.68 ...
+#>   ..- attr(*, "names")= chr [1:8] "CDKN2A" "GDF15" "EDA2R" "IL6" ...
+#>  $ sigma: Named num [1:8] 1.034 1.074 0.933 1.126 0.998 ...
+#>   ..- attr(*, "names")= chr [1:8] "CDKN2A" "GDF15" "EDA2R" "IL6" ...
+#>  - attr(*, "class")= chr "linear_clock"
+```
+
+For your own model you build this object with
+`linear_clock(alpha, beta, mu, sigma)` from its fitted coefficients; the
+feature columns just have to be named to match. With those inputs in
+hand, the workflow is three calls: fit an age-conditioned reference from
+the data, run the decomposition, and inspect a sample.
+
+``` r
+# Age-conditioned reference profile (defines "expected for age"), fit from the data
 ref <- fit_reference_profile(
   features = as.data.frame(clockshap_example$features),
   age      = clockshap_example$age
