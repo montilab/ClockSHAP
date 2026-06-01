@@ -27,7 +27,7 @@ features push a predicted age up or down in absolute terms, it answers:
 
 For a linear clock it provides an exact, closed-form decomposition of that gap
 into per-feature contributions. This vignette walks through the full workflow on
-the package's bundled synthetic dataset. The data, the core objects, the
+the package's bundled synthetic dataset: the data, the core objects, the
 decomposition, the accessors, and how the result relates to the more familiar
 age-acceleration metrics.
 
@@ -39,7 +39,7 @@ expectation under a reference:
 
 $$\Delta_i = \hat{y}_i - \mathrm{E}[\hat{y} \mid \mathrm{Age}_i]$$
 
-The expectation comes from an **age-conditioned reference profile** — a
+The expectation comes from an **age-conditioned reference profile**, a
 per-feature linear age trend fit on a reference cohort:
 
 $$\mathrm{E}[X_k \mid \mathrm{Age}] = \gamma_{0,k} + \gamma_{1,k}\,\mathrm{Age}$$
@@ -64,10 +64,10 @@ str(clockshap_example, max.level = 1)
 
 `features` is a 120 × 8 matrix of synthetic "gene" values (rows `S001`–`S120`),
 each gene carrying a genuine linear age trend plus noise; `age` is the
-chronological age; and `clock` is a fitted clock object. Two samples are planted
+chronological age; and `clock` is a fitted clock object. Note the layout: rows are samples and columns are the clock's features, so transpose a genes × samples matrix first. Two samples are planted
 deviators: **`S001`** reads older than expected for its age and **`S002`** reads
 younger, both driven by a shared senescence / inflammaging axis (`CDKN2A`,
-`GDF15`, `IL6`). The data carry no real biological signal and the gene symbols are
+`GDF15`, `IL6`). The data carry no real biological signal; the gene symbols are
 only there to make the output legible.
 
 ## The building blocks: clock and reference
@@ -119,7 +119,7 @@ cs                # print method: dimensions + deviation range
 summary(cs)$deviation
 ```
 
-`clockshap()` also enforces its core invariant internally — it will error rather
+`clockshap()` also enforces its core invariant internally: it will error rather
 than return a result where the contributions fail to sum to the deviation.
 
 ## The output: structure and accessors
@@ -133,7 +133,7 @@ A `clockshap` object is a list with five elements, each retrievable either by
 | `expected`  | `clockshap_expected()`  | age-matched expectation $\mathrm{E}[\hat{y}\mid\mathrm{Age}]$ |
 | `deviation` | `clockshap_deviation()` | $\Delta = \text{predicted} - \text{expected}$ |
 | `phi`       | `clockshap_phi()`       | per-feature contribution matrix (samples × features) |
-| `age`       | —                       | the input chronological ages |
+| `age`       | (none)                       | the input chronological ages |
 
 ```{r results}
 head(data.frame(
@@ -199,8 +199,8 @@ metrics <- data.frame(
 )
 ```
 
-Because this clock has a slope below 1, AAA is **age-biased** — systematically
-positive for younger samples and negative for older ones — while RAA and the
+Because this clock has a slope below 1, AAA is **age-biased**, systematically
+positive for younger samples and negative for older ones, while RAA and the
 deviation are not:
 
 ```{r metrics-cor}
@@ -215,10 +215,10 @@ acceleration:
 all.equal(metrics$deviation, metrics$RAA, tolerance = 1e-9)
 ```
 
-This is not a coincidence. For a linear clock, passing per-feature age trends
+This is not a coincidence: for a linear clock, passing per-feature age trends
 through the clock reproduces the OLS fit of predicted age on age, so
 `predicted - expected` equals the regression residual. ClockSHAP becomes distinct
-from RAA — and starts carrying new biological signal — only when the reference is
+from RAA, and starts carrying new biological signal, only when the reference is
 a *different*, biologically meaningful cohort (e.g., a tissue-of-origin
 reference). What it always adds, even in the self-reference case, is the
 **per-feature attribution** of that deviation, which neither AAA nor RAA provides.
@@ -250,6 +250,6 @@ ClockSHAP is defined for linear aging clocks and requires:
 - consistent feature definitions between the clock and the reference.
 
 It does not train clocks, and it does not assume a particular source of reference
-data — any cohort can define the reference aging trajectory. Because the choice of
+data; any cohort can define the reference aging trajectory. Because the choice of
 reference determines what "expected for age" means, deviations should always be
 interpreted relative to it.
