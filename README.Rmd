@@ -180,7 +180,7 @@ A post-hoc calibration that removes systematic age trends in prediction error wi
 
 **ClockSHAP deviation.** ClockSHAP's $\Delta$ generalizes RAA. The age-conditional expectation is built through a **feature-level reference profile** ($\gamma_0 + \gamma_1\,\mathrm{Age}$ per feature, passed through the clock) rather than by regressing $\hat{y}$ on age directly. This has an exact special case: **for a linear-additive clock, when the reference is fit on the cohort of interest itself, $\Delta$ equals RAA sample-for-sample.** Because $\hat{y}$ is an exact linear function of the features and OLS projection onto age is linear, passing the per-feature age trends through the clock reproduces the OLS fit of $\hat{y} \sim \mathrm{Age}$ exactly, so $\text{predicted} - \text{expected} = \text{predicted} - \text{fitted} = \text{residual} = \mathrm{RAA}$.
 
-The purpose of ClockSHAP is what happens when the reference is set to a *different*, biologically meaningful cohort (e.g., GTEx tissue-of-origin): `expected` is then anchored to normal aging in that reference rather than to the target cohort's own internal trend, and the deviation measures departure from that external expectation.
+An additional usage of ClockSHAP is what happens when the reference is set to a *different*, biologically meaningful cohort (e.g., GTEx tissue-of-origin): `expected` is then anchored to normal aging in that reference rather than to the target cohort's own internal trend, and the deviation measures departure from that external expectation.
 
 We recommend the name **"deviation"** or **"age-matched deviation"** to keep this distinct from AAA and RAA.
 

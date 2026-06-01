@@ -268,8 +268,8 @@ per-feature age trends through the clock reproduces the OLS fit of
 $\hat{y} \sim \mathrm{Age}$ exactly, so
 $\text{predicted} - \text{expected} = \text{predicted} - \text{fitted} = \text{residual} = \mathrm{RAA}$.
 
-The purpose of ClockSHAP is what happens when the reference is set to a
-*different*, biologically meaningful cohort (e.g., GTEx
+An additional usage of ClockSHAP is what happens when the reference is
+set to a *different*, biologically meaningful cohort (e.g., GTEx
 tissue-of-origin): `expected` is then anchored to normal aging in that
 reference rather than to the target cohort’s own internal trend, and the
 deviation measures departure from that external expectation.
