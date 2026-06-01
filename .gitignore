@@ -23,3 +23,7 @@ vignettes/*.pdf
 # Local user inputs (do not commit)
 input/
 docs
+
+# Local scratch figures
+dummy-waterfall*.png
+man/figures/readme-worked-example-waterfall.svg

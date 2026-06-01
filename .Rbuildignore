@@ -9,3 +9,6 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^vignettes/.*\.html$
+^vignettes/.*\.pdf$
+^man/figures/readme-worked-example-waterfall\.svg$
