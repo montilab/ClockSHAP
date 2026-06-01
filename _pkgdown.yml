@@ -1,0 +1,29 @@
+url: https://montilab.github.io/ClockSHAP
+
+template:
+  bootstrap: 5
+
+reference:
+- title: Clock and reference specification
+  desc: Define the linear clock and the age-conditioned reference.
+  contents:
+  - linear_clock
+  - reference_profile
+  - fit_reference_profile
+- title: Running ClockSHAP
+  desc: Compute the age-matched deviation and its per-feature decomposition.
+  contents:
+  - clockshap
+- title: Accessors
+  desc: Pull individual components out of a clockshap object.
+  contents:
+  - clockshap_predicted
+  - clockshap_expected
+  - clockshap_deviation
+  - clockshap_phi
+- title: Visualization
+  contents:
+  - plot_clockshap_waterfall
+- title: Example data
+  contents:
+  - clockshap_example

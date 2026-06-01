@@ -6,3 +6,6 @@
 ^data-raw$
 ^input$
 ^dummy-waterfall.*\.png$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
