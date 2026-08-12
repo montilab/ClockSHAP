@@ -34,6 +34,10 @@
 #'   Use `{value}` as a placeholder for the numeric value.
 #' @param effect_label Text template for effect labels shown inside bars. Use
 #'   `{value}` as a placeholder for the numeric value.
+#' @param top_label_digits Number of decimal places used for expected age,
+#'   predicted age, and deviation annotations.
+#' @param effect_label_digits Number of decimal places used for
+#'   feature-contribution annotations.
 #'
 #' @return A ggplot object.
 #'
@@ -65,7 +69,9 @@ plot_clockshap_waterfall <- function(
     deviation_label = "Deviation = {value} yr",
     expected_age_label = "Expected Age\n{value} yr",
     predicted_age_label = "Predicted Age\n{value} yr",
-    effect_label = "{value}"
+    effect_label = "{value}",
+    top_label_digits = 2,
+    effect_label_digits = 1
 ) {
 
   ## ------------------------------------------------------------
@@ -126,6 +132,26 @@ plot_clockshap_waterfall <- function(
     stop("`effect_label` must be a single character string.",
          call. = FALSE)
   }
+  if (!is.numeric(top_label_digits) || length(top_label_digits) != 1 ||
+      !is.finite(top_label_digits) || top_label_digits < 0 ||
+      top_label_digits > 15 ||
+      top_label_digits != as.integer(top_label_digits)) {
+    stop("`top_label_digits` must be an integer between 0 and 15.",
+         call. = FALSE)
+  }
+  if (!is.numeric(effect_label_digits) || length(effect_label_digits) != 1 ||
+      !is.finite(effect_label_digits) || effect_label_digits < 0 ||
+      effect_label_digits > 15 ||
+      effect_label_digits != as.integer(effect_label_digits)) {
+    stop("`effect_label_digits` must be an integer between 0 and 15.",
+         call. = FALSE)
+  }
+  top_label_digits <- as.integer(top_label_digits)
+  effect_label_digits <- as.integer(effect_label_digits)
+
+  top_unsigned_format <- paste0("%.", top_label_digits, "f")
+  top_signed_format <- paste0("%+.", top_label_digits, "f")
+  effect_signed_format <- paste0("%+.", effect_label_digits, "f")
 
   expected_age_label <- gsub("\\\\n", "\n", expected_age_label)
   predicted_age_label <- gsub("\\\\n", "\n", predicted_age_label)
@@ -166,8 +192,8 @@ plot_clockshap_waterfall <- function(
          call. = FALSE)
   }
 
-  exp_i_r  <- round(exp_i, 1)
-  pred_i_r <- round(pred_i, 1)
+  exp_i_r  <- round(exp_i, top_label_digits)
+  pred_i_r <- round(pred_i, top_label_digits)
   delta_i  <- pred_i - exp_i
 
   ## ------------------------------------------------------------
@@ -220,7 +246,7 @@ plot_clockshap_waterfall <- function(
   if (!is.finite(x_span) || x_span <= 0) {
     x_span <- 1
   }
-  eff_values <- sprintf("%+.1f", wf_plot$Eff)
+  eff_values <- sprintf(effect_signed_format, wf_plot$Eff)
   wf_plot$eff_label <- vapply(
     eff_values,
     function(v) sub("{value}", v, effect_label, fixed = TRUE),
@@ -383,7 +409,7 @@ plot_clockshap_waterfall <- function(
       "text",
       x = (exp_i + pred_i) / 2,
       y = y_label,
-      label = sub("{value}", sprintf("%+.1f", delta_i), deviation_label, fixed = TRUE),
+      label = sub("{value}", sprintf(top_signed_format, delta_i), deviation_label, fixed = TRUE),
       size = 4.5,
       fontface = "bold",
       colour = "grey20"
@@ -396,7 +422,7 @@ plot_clockshap_waterfall <- function(
         "text",
         x = exp_i,
         y = y_label,
-        label = sub("{value}", sprintf("%.1f", exp_i_r), expected_age_label,
+        label = sub("{value}", sprintf(top_unsigned_format, exp_i_r), expected_age_label,
                     fixed = TRUE),
         hjust = 0.5, vjust = 0,
         size = 4,
@@ -406,7 +432,7 @@ plot_clockshap_waterfall <- function(
         "text",
         x = pred_i,
         y = y_label,
-        label = sub("{value}", sprintf("%.1f", pred_i_r), predicted_age_label,
+        label = sub("{value}", sprintf(top_unsigned_format, pred_i_r), predicted_age_label,
                     fixed = TRUE),
         hjust = 0.5, vjust = 0,
         size = 4,

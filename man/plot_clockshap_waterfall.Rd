@@ -20,7 +20,9 @@ plot_clockshap_waterfall(
   deviation_label = "Deviation = {value} yr",
   expected_age_label = "Expected Age\\n{value} yr",
   predicted_age_label = "Predicted Age\\n{value} yr",
-  effect_label = "{value}"
+  effect_label = "{value}",
+  top_label_digits = 2,
+  effect_label_digits = 1
 )
 }
 \arguments{
@@ -66,6 +68,12 @@ Use \code{{value}} as a placeholder for the numeric value.}
 
 \item{effect_label}{Text template for effect labels shown inside bars. Use
 \code{{value}} as a placeholder for the numeric value.}
+
+\item{top_label_digits}{Number of decimal places used for expected age,
+predicted age, and deviation annotations.}
+
+\item{effect_label_digits}{Number of decimal places used for
+feature-contribution annotations.}
 }
 \value{
 A ggplot object.

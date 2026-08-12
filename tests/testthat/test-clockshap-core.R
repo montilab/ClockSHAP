@@ -608,6 +608,61 @@ test_that("waterfall effect labels match per-bar effects", {
 })
 
 
+test_that("waterfall label precision is configurable by annotation type", {
+
+  skip_if_not_installed("ggplot2")
+
+  phi <- matrix(c(3.439, 1.234), nrow = 1,
+                dimnames = list("S1", c("F1", "F2")))
+  cs <- structure(
+    list(
+      phi = phi,
+      deviation = 4.673,
+      predicted = 57.034,
+      expected = 52.361,
+      age = 46
+    ),
+    class = "clockshap"
+  )
+
+  p <- plot_clockshap_waterfall(
+    cs,
+    sample = "S1",
+    top_n = 2,
+    effect_label_mode = "inside",
+    deviation_label = "D:{value}",
+    expected_age_label = "X:{value}",
+    predicted_age_label = "P:{value}",
+    effect_label = "E:{value}",
+    top_label_digits = 2,
+    effect_label_digits = 1
+  )
+
+  built <- ggplot2::ggplot_build(p)
+  labels <- unlist(lapply(
+    built$data,
+    function(layer) {
+      if ("label" %in% names(layer)) as.character(layer$label) else character()
+    }
+  ))
+
+  expect_true(all(c(
+    "D:+4.67", "X:52.36", "P:57.03",
+    "E:+3.4", "E:+1.2", "E:+0.0"
+  ) %in% labels))
+  expect_error(
+    plot_clockshap_waterfall(cs, sample = "S1", top_label_digits = 1.5),
+    "integer between 0 and 15",
+    fixed = TRUE
+  )
+  expect_error(
+    plot_clockshap_waterfall(cs, sample = "S1", effect_label_digits = -1),
+    "integer between 0 and 15",
+    fixed = TRUE
+  )
+})
+
+
 test_that("waterfall auto mode moves small labels outside with connectors", {
 
   skip_if_not_installed("ggplot2")
