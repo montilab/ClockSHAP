@@ -1,6 +1,6 @@
 Package: ClockSHAP
 Title: Age-Conditioned SHAP Decompositions for Linear Aging Clocks
-Version: 1.0.1
+Version: 1.1.0
 Authors@R:
     person(
         "Payton", "Bock",
