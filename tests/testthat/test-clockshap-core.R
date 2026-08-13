@@ -608,7 +608,7 @@ test_that("waterfall effect labels match per-bar effects", {
 })
 
 
-test_that("waterfall label precision is configurable by annotation type", {
+test_that("waterfall labels use one reconciled precision", {
 
   skip_if_not_installed("ggplot2")
 
@@ -634,8 +634,7 @@ test_that("waterfall label precision is configurable by annotation type", {
     expected_age_label = "X:{value}",
     predicted_age_label = "P:{value}",
     effect_label = "E:{value}",
-    top_label_digits = 2,
-    effect_label_digits = 1
+    digits = 2
   )
 
   built <- ggplot2::ggplot_build(p)
@@ -648,18 +647,165 @@ test_that("waterfall label precision is configurable by annotation type", {
 
   expect_true(all(c(
     "D:+4.67", "X:52.36", "P:57.03",
-    "E:+3.4", "E:+1.2", "E:+0.0"
+    "E:+3.44", "E:+1.23", "E:0.00"
   ) %in% labels))
   expect_error(
-    plot_clockshap_waterfall(cs, sample = "S1", top_label_digits = 1.5),
-    "integer between 0 and 15",
+    plot_clockshap_waterfall(cs, sample = "S1", digits = 1.5),
+    "integer between 0 and 9",
+    fixed = TRUE
+  )
+  expect_warning(
+    plot_clockshap_waterfall(cs, sample = "S1", top_label_digits = 2),
+    "deprecated",
     fixed = TRUE
   )
   expect_error(
-    plot_clockshap_waterfall(cs, sample = "S1", effect_label_digits = -1),
-    "integer between 0 and 15",
+    suppressWarnings(plot_clockshap_waterfall(
+      cs,
+      sample = "S1",
+      top_label_digits = 2,
+      effect_label_digits = 1
+    )),
+    "must have the same value",
     fixed = TRUE
   )
+})
+
+
+test_that("reconciled waterfall values preserve displayed identities", {
+
+  set.seed(2026)
+
+  for (iteration in seq_len(20)) {
+    phi <- matrix(rnorm(24, sd = 8), nrow = 2)
+    colnames(phi) <- paste0("F", seq_len(ncol(phi)))
+    rownames(phi) <- c("S1", "S2")
+    deviation <- rowSums(phi)
+    expected <- runif(2, 30, 80)
+    cs <- structure(
+      list(
+        phi = phi,
+        deviation = deviation,
+        predicted = expected + deviation,
+        expected = expected,
+        age = c(45, 65)
+      ),
+      class = "clockshap"
+    )
+
+    for (digits in 0:2) {
+      scale <- 10^digits
+      for (top_n in c(1, 3, 7, 12)) {
+        displayed <- clockshap_waterfall_values(
+          cs, sample = "S1", top_n = top_n, digits = digits
+        )
+        repeated <- clockshap_waterfall_values(
+          cs, sample = "S1", top_n = top_n, digits = digits
+        )
+
+        phi_sorted <- phi["S1", ][order(-abs(phi["S1", ]))]
+        top <- head(phi_sorted, top_n)
+        exact_contributions <- c(
+          top,
+          Other = sum(phi_sorted) - sum(top)
+        )
+
+        expect_equal(
+          sum(round(displayed$contributions * scale)),
+          round(displayed$deviation * scale)
+        )
+        expect_equal(
+          round((displayed$expected + displayed$deviation) * scale),
+          round(displayed$predicted * scale)
+        )
+        expect_lte(
+          abs(displayed$predicted - cs$predicted[1]),
+          1 / scale + 1e-12
+        )
+        expect_true(all(
+          abs(
+            round(displayed$contributions * scale) -
+              round(exact_contributions * scale)
+          ) <= 1
+        ))
+        nonzero_display <- displayed$contributions != 0
+        expect_true(all(
+          sign(displayed$contributions[nonzero_display]) ==
+            sign(exact_contributions[nonzero_display])
+        ))
+        expect_identical(displayed, repeated)
+      }
+    }
+  }
+})
+
+
+test_that("reconciliation handles near-zero deviations with cancellation", {
+
+  phi <- matrix(
+    c(100.49, -100.49, 0.49, 0.49),
+    nrow = 1,
+    dimnames = list("S1", c("A", "B", "C", "D"))
+  )
+  deviation <- rowSums(phi)
+  cs <- structure(
+    list(
+      phi = phi,
+      deviation = deviation,
+      predicted = 50 + deviation,
+      expected = 50,
+      age = 50
+    ),
+    class = "clockshap"
+  )
+
+  displayed <- clockshap_waterfall_values(cs, "S1", top_n = 4, digits = 0)
+
+  expect_equal(sum(displayed$contributions), displayed$deviation)
+  expect_equal(displayed$expected + displayed$deviation, displayed$predicted)
+  expect_equal(displayed$deviation, 1)
+  expect_true(all(abs(displayed$contributions - round(c(phi[1, ], Other = 0))) <= 1))
+})
+
+
+test_that("waterfall label templates may omit the value placeholder", {
+
+  skip_if_not_installed("ggplot2")
+
+  phi <- matrix(c(1.2, -0.2), nrow = 1,
+                dimnames = list("S1", c("F1", "F2")))
+  cs <- structure(
+    list(
+      phi = phi,
+      deviation = 1,
+      predicted = 51,
+      expected = 50,
+      age = 50
+    ),
+    class = "clockshap"
+  )
+
+  p <- plot_clockshap_waterfall(
+    cs,
+    "S1",
+    top_n = 2,
+    effect_label_mode = "inside",
+    deviation_label = "Age-matched deviation",
+    expected_age_label = "Expected",
+    predicted_age_label = "Predicted",
+    effect_label = "Contribution"
+  )
+  built <- ggplot2::ggplot_build(p)
+  labels <- unlist(lapply(
+    built$data,
+    function(layer) {
+      if ("label" %in% names(layer)) as.character(layer$label) else character()
+    }
+  ))
+
+  expect_true(all(c(
+    "Age-matched deviation", "Expected", "Predicted", "Contribution"
+  ) %in% labels))
 })
 
 

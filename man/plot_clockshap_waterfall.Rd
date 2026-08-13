@@ -21,8 +21,9 @@ plot_clockshap_waterfall(
   expected_age_label = "Expected Age\\n{value} yr",
   predicted_age_label = "Predicted Age\\n{value} yr",
   effect_label = "{value}",
-  top_label_digits = 2,
-  effect_label_digits = 1
+  top_label_digits = NULL,
+  effect_label_digits = NULL,
+  digits = 1
 )
 }
 \arguments{
@@ -69,11 +70,11 @@ Use \code{{value}} as a placeholder for the numeric value.}
 \item{effect_label}{Text template for effect labels shown inside bars. Use
 \code{{value}} as a placeholder for the numeric value.}
 
-\item{top_label_digits}{Number of decimal places used for expected age,
-predicted age, and deviation annotations.}
+\item{top_label_digits}{Deprecated compatibility argument. Use \code{digits}.}
 
-\item{effect_label_digits}{Number of decimal places used for
-feature-contribution annotations.}
+\item{effect_label_digits}{Deprecated compatibility argument. Use \code{digits}.}
+
+\item{digits}{Number of decimal places used for all numeric labels.}
 }
 \value{
 A ggplot object.
@@ -86,4 +87,11 @@ features and aggregating the remainder as "Other".
 \details{
 The plot visualizes how feature-level contributions bridge the expected
 age (conditioned on chronological age) to the predicted biological age.
+
+Labels use reconciled rounding from
+\code{\link[=clockshap_waterfall_values]{clockshap_waterfall_values()}}, so displayed contributions sum to the
+displayed deviation and displayed expected age plus deviation equals
+displayed predicted age. To preserve these identities, an endpoint label
+may differ from independently rounding its stored value by one unit in the
+last displayed decimal place.
 }

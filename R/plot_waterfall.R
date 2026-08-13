@@ -34,12 +34,18 @@
 #'   Use `{value}` as a placeholder for the numeric value.
 #' @param effect_label Text template for effect labels shown inside bars. Use
 #'   `{value}` as a placeholder for the numeric value.
-#' @param top_label_digits Number of decimal places used for expected age,
-#'   predicted age, and deviation annotations.
-#' @param effect_label_digits Number of decimal places used for
-#'   feature-contribution annotations.
+#' @param digits Number of decimal places used for all numeric labels.
+#' @param top_label_digits Deprecated compatibility argument. Use `digits`.
+#' @param effect_label_digits Deprecated compatibility argument. Use `digits`.
 #'
 #' @return A ggplot object.
+#'
+#' @details Labels use reconciled rounding from
+#'   [clockshap_waterfall_values()], so displayed contributions sum to the
+#'   displayed deviation and displayed expected age plus deviation equals
+#'   displayed predicted age. To preserve these identities, an endpoint label
+#'   may differ from independently rounding its stored value by one unit in the
+#'   last displayed decimal place.
 #'
 #' @importFrom ggplot2 ggplot aes geom_segment geom_text annotate
 #' @importFrom ggplot2 scale_y_continuous scale_x_continuous scale_color_manual
@@ -70,8 +76,9 @@ plot_clockshap_waterfall <- function(
     expected_age_label = "Expected Age\n{value} yr",
     predicted_age_label = "Predicted Age\n{value} yr",
     effect_label = "{value}",
-    top_label_digits = 2,
-    effect_label_digits = 1
+    top_label_digits = NULL,
+    effect_label_digits = NULL,
+    digits = 1
 ) {
 
   ## ------------------------------------------------------------
@@ -81,10 +88,7 @@ plot_clockshap_waterfall <- function(
     stop("`x` must be a clockshap object.", call. = FALSE)
   }
 
-  if (!is.numeric(top_n) || length(top_n) != 1 || top_n < 1) {
-    stop("`top_n` must be a positive integer.", call. = FALSE)
-  }
-  top_n <- as.integer(top_n)
+  top_n <- .validate_waterfall_top_n(top_n)
   effect_label_mode <- match.arg(
     effect_label_mode,
     c("auto", "inside", "outside", "hide_small")
@@ -132,55 +136,53 @@ plot_clockshap_waterfall <- function(
     stop("`effect_label` must be a single character string.",
          call. = FALSE)
   }
-  if (!is.numeric(top_label_digits) || length(top_label_digits) != 1 ||
-      !is.finite(top_label_digits) || top_label_digits < 0 ||
-      top_label_digits > 15 ||
-      top_label_digits != as.integer(top_label_digits)) {
-    stop("`top_label_digits` must be an integer between 0 and 15.",
-         call. = FALSE)
+  digits_missing <- missing(digits)
+  if (!digits_missing) {
+    digits <- .validate_waterfall_digits(digits)
   }
-  if (!is.numeric(effect_label_digits) || length(effect_label_digits) != 1 ||
-      !is.finite(effect_label_digits) || effect_label_digits < 0 ||
-      effect_label_digits > 15 ||
-      effect_label_digits != as.integer(effect_label_digits)) {
-    stop("`effect_label_digits` must be an integer between 0 and 15.",
-         call. = FALSE)
+  legacy_digits <- c(
+    top_label_digits = top_label_digits,
+    effect_label_digits = effect_label_digits
+  )
+  legacy_digits <- legacy_digits[!vapply(legacy_digits, is.null, logical(1))]
+  if (length(legacy_digits) > 0) {
+    legacy_digits <- vapply(names(legacy_digits), function(argument) {
+      .validate_waterfall_digits(legacy_digits[[argument]], argument)
+    }, integer(1))
+    warning(
+      "`top_label_digits` and `effect_label_digits` are deprecated; use `digits`.",
+      call. = FALSE
+    )
+    if (length(unique(legacy_digits)) > 1) {
+      stop("Deprecated precision arguments must have the same value.",
+           call. = FALSE)
+    }
+    if (!digits_missing && !identical(digits, legacy_digits[[1]])) {
+      stop("`digits` conflicts with a deprecated precision argument.",
+           call. = FALSE)
+    }
+    if (digits_missing) {
+      digits <- legacy_digits[[1]]
+    }
   }
-  top_label_digits <- as.integer(top_label_digits)
-  effect_label_digits <- as.integer(effect_label_digits)
+  if (digits_missing && length(legacy_digits) == 0) {
+    digits <- .validate_waterfall_digits(digits)
+  }
 
-  top_unsigned_format <- paste0("%.", top_label_digits, "f")
-  top_signed_format <- paste0("%+.", top_label_digits, "f")
-  effect_signed_format <- paste0("%+.", effect_label_digits, "f")
+  unsigned_format <- paste0("%.", digits, "f")
 
   expected_age_label <- gsub("\\\\n", "\n", expected_age_label)
   predicted_age_label <- gsub("\\\\n", "\n", predicted_age_label)
 
   phi <- clockshap_phi(x)
 
-  ## resolve sample index
-  if (is.character(sample)) {
-    if (is.null(rownames(phi)) || !sample %in% rownames(phi)) {
-      stop("Sample name not found in ClockSHAP object.", call. = FALSE)
-    }
-    i <- match(sample, rownames(phi))
-  } else {
-    i <- as.integer(sample)
-    if (is.na(i) || i < 1 || i > nrow(phi)) {
-      stop("Sample index out of bounds.", call. = FALSE)
-    }
-  }
+  i <- .resolve_waterfall_sample(phi, sample)
 
   ## ------------------------------------------------------------
   ## Extract and order effects
   ## ------------------------------------------------------------
-  phi_all <- phi[i, ]
-  phi_all <- phi_all[order(-abs(phi_all))]
-
-  top_eff   <- head(phi_all, top_n)
-  other_eff <- sum(phi_all) - sum(top_eff)
-
-  effects <- c(top_eff, Other = other_eff)
+  effects <- .waterfall_contributions(phi[i, ], top_n)
+  display <- clockshap_waterfall_values(x, sample, top_n, digits)
 
   ## ------------------------------------------------------------
   ## Expected and predicted ages
@@ -191,10 +193,6 @@ plot_clockshap_waterfall <- function(
     stop("Selected sample has non-finite expected or predicted age; cannot plot.",
          call. = FALSE)
   }
-
-  exp_i_r  <- round(exp_i, top_label_digits)
-  pred_i_r <- round(pred_i, top_label_digits)
-  delta_i  <- pred_i - exp_i
 
   ## ------------------------------------------------------------
   ## Cumulative positions for waterfall
@@ -208,6 +206,7 @@ plot_clockshap_waterfall <- function(
     End     = end_vals,
     Mid     = (start_vals + end_vals) / 2,
     Eff     = effects,
+    DisplayEff = display$contributions,
     Sign    = effects > 0,
     IsOther = names(effects) == "Other"
   )
@@ -246,7 +245,7 @@ plot_clockshap_waterfall <- function(
   if (!is.finite(x_span) || x_span <= 0) {
     x_span <- 1
   }
-  eff_values <- sprintf(effect_signed_format, wf_plot$Eff)
+  eff_values <- .format_waterfall_signed(wf_plot$DisplayEff, digits)
   wf_plot$eff_label <- vapply(
     eff_values,
     function(v) sub("{value}", v, effect_label, fixed = TRUE),
@@ -409,7 +408,12 @@ plot_clockshap_waterfall <- function(
       "text",
       x = (exp_i + pred_i) / 2,
       y = y_label,
-      label = sub("{value}", sprintf(top_signed_format, delta_i), deviation_label, fixed = TRUE),
+      label = sub(
+        "{value}",
+        .format_waterfall_signed(display$deviation, digits),
+        deviation_label,
+        fixed = TRUE
+      ),
       size = 4.5,
       fontface = "bold",
       colour = "grey20"
@@ -422,7 +426,7 @@ plot_clockshap_waterfall <- function(
         "text",
         x = exp_i,
         y = y_label,
-        label = sub("{value}", sprintf(top_unsigned_format, exp_i_r), expected_age_label,
+        label = sub("{value}", sprintf(unsigned_format, display$expected), expected_age_label,
                     fixed = TRUE),
         hjust = 0.5, vjust = 0,
         size = 4,
@@ -432,7 +436,7 @@ plot_clockshap_waterfall <- function(
         "text",
         x = pred_i,
         y = y_label,
-        label = sub("{value}", sprintf(top_unsigned_format, pred_i_r), predicted_age_label,
+        label = sub("{value}", sprintf(unsigned_format, display$predicted), predicted_age_label,
                     fixed = TRUE),
         hjust = 0.5, vjust = 0,
         size = 4,
