@@ -12,7 +12,7 @@ It answers a single question:
 > **Why is this sample predicted to be older or younger than expected
 > for its chronological age?**
 
-The method was developed for tissue-anchored transcriptomic aging clocks
+The method was developed for tissue-of-origin transcriptomic aging clocks
 but is designed to support comparative aging analyses across diverse
 clock contexts.
 
