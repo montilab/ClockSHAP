@@ -108,6 +108,8 @@ The returned `clockshap` object is a list with five fields:
 - `phi`: per-feature contribution matrix (rows sum exactly to `deviation`)
 - `age`: input chronological ages
 
+For a complete worked example, including the cohort scatter, per-sample waterfalls, and comparison with age-acceleration metrics, read the [ClockSHAP introduction vignette](https://montilab.github.io/ClockSHAP/articles/clockshap-introduction.html). The [documentation site](https://montilab.github.io/ClockSHAP/) also includes the full function reference.
+
 ---
 
 ## How it works (in two lines)

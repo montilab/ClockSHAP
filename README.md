@@ -12,9 +12,9 @@ It answers a single question:
 > **Why is this sample predicted to be older or younger than expected
 > for its chronological age?**
 
-The method was developed for tissue-of-origin transcriptomic aging clocks
-but is designed to support comparative aging analyses across diverse
-clock contexts.
+The method was developed for tissue-of-origin transcriptomic aging
+clocks but is designed to support comparative aging analyses across
+diverse clock contexts.
 
 ![ClockSHAP method overview](man/figures/clockshap-overview.png)
 
@@ -147,13 +147,20 @@ plot_clockshap_waterfall(cs, sample = 1, top_n = 6)
 
 The returned `clockshap` object is a list with five fields:
 
--   `predicted`: clock prediction $\hat{y}$
--   `expected`: age-matched expectation
-    $\mathrm{E}[\hat{y} \mid \mathrm{Age}]$ under the reference
--   `deviation`: `predicted - expected` ($\Delta$)
--   `phi`: per-feature contribution matrix (rows sum exactly to
-    `deviation`)
--   `age`: input chronological ages
+- `predicted`: clock prediction $\hat{y}$
+- `expected`: age-matched expectation
+  $\mathrm{E}[\hat{y} \mid \mathrm{Age}]$ under the reference
+- `deviation`: `predicted - expected` ($\Delta$)
+- `phi`: per-feature contribution matrix (rows sum exactly to
+  `deviation`)
+- `age`: input chronological ages
+
+For a complete worked example, including the cohort scatter, per-sample
+waterfalls, and comparison with age-acceleration metrics, read the
+[ClockSHAP introduction
+vignette](https://montilab.github.io/ClockSHAP/articles/clockshap-introduction.html).
+The [documentation site](https://montilab.github.io/ClockSHAP/) also
+includes the full function reference.
 
 ------------------------------------------------------------------------
 
@@ -182,11 +189,11 @@ defined, and why the decomposition is exact.
 
 The rest of this README explains the two identities above:
 
--   what `expected` means (the reference profile),
--   why the per-feature contributions $\phi_k$ sum exactly to the
-    deviation (the SHAP property),
--   how the deviation differs from other clock-acceleration metrics
-    (AAA, RAA).
+- what `expected` means (the reference profile),
+- why the per-feature contributions $\phi_k$ sum exactly to the
+  deviation (the SHAP property),
+- how the deviation differs from other clock-acceleration metrics (AAA,
+  RAA).
 
 ### How `expected` is defined: the reference profile
 
@@ -281,17 +288,17 @@ keep this distinct from AAA and RAA.
 
 ## Practical notes
 
--   **Deviation is reference-dependent.** The choice of reference cohort
-    defines what “expected for age” means.
--   **“Years” are clock-relative.** A deviation of +5 under one clock is
-    not comparable to +5 under a different clock, training set, or
-    feature space.
--   **Upstream preprocessing matters a lot.** ClockSHAP assumes the
-    feature matrix is analysis-ready and consistent with the clock
-    (transformations, normalization, feature matching, batch correction,
-    QC). Mismatched feature spaces or batch effects produce technical,
-    not biological, deviations. The importance of this step cannot be
-    overstated.
+- **Deviation is reference-dependent.** The choice of reference cohort
+  defines what “expected for age” means.
+- **“Years” are clock-relative.** A deviation of +5 under one clock is
+  not comparable to +5 under a different clock, training set, or feature
+  space.
+- **Upstream preprocessing matters a lot.** ClockSHAP assumes the
+  feature matrix is analysis-ready and consistent with the clock
+  (transformations, normalization, feature matching, batch correction,
+  QC). Mismatched feature spaces or batch effects produce technical, not
+  biological, deviations. The importance of this step cannot be
+  overstated.
 
 For broader discussion of calibration, age bias, and computational
 challenges in clock analysis, see [Epigenetic ageing clocks: statistical
