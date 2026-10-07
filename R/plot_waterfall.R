@@ -5,7 +5,7 @@
 #' features and aggregating the remainder as "Other".
 #'
 #' The plot visualizes how feature-level contributions bridge the expected
-#' age (conditioned on chronological age) to the predicted biological age.
+#' age (conditioned on chronological age) to the predicted age.
 #'
 #' @param x A `clockshap` object.
 #' @param sample A sample index (integer) or row name (character).

@@ -27,7 +27,7 @@ An object of class \code{clockshap} containing per-feature contributions,
 deviation values, and metadata.
 }
 \description{
-Decompose biological age deviation into exact, age-conditioned feature
+Decompose age deviation into exact, age-conditioned feature
 contributions for a linear aging clock.
 }
 \examples{

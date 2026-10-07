@@ -86,7 +86,7 @@ features and aggregating the remainder as "Other".
 }
 \details{
 The plot visualizes how feature-level contributions bridge the expected
-age (conditioned on chronological age) to the predicted biological age.
+age (conditioned on chronological age) to the predicted age.
 
 Labels use reconciled rounding from
 \code{\link[=clockshap_waterfall_values]{clockshap_waterfall_values()}}, so displayed contributions sum to the

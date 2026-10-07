@@ -24,6 +24,13 @@ reference:
 - title: Visualization
   contents:
   - plot_clockshap_waterfall
+  - clockshap_waterfall_values
 - title: Example data
   contents:
   - clockshap_example
+
+articles:
+- title: Getting started
+  navbar: ~
+  contents:
+  - clockshap-introduction

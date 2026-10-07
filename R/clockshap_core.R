@@ -1,6 +1,6 @@
 #' ClockSHAP decomposition
 #'
-#' Decompose biological age deviation into exact, age-conditioned feature
+#' Decompose age deviation into exact, age-conditioned feature
 #' contributions for a linear aging clock.
 #'
 #' @param features A matrix or data.frame of feature values

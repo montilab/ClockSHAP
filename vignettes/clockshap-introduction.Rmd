@@ -23,7 +23,7 @@ library(ClockSHAP)
 ClockSHAP interprets the output of a linear aging clock. Instead of asking which
 features push a predicted age up or down in absolute terms, it answers:
 
-> **Why is this sample predicted to be biologically older or younger than expected for its chronological age?**
+> **Why is this sample predicted to be older or younger than expected for its chronological age?**
 
 For a linear clock it provides an exact, closed-form decomposition of that gap
 into per-feature contributions. This vignette walks through the full workflow on

@@ -1,14 +1,14 @@
 Package: ClockSHAP
 Title: Age-Conditioned SHAP Decompositions for Linear Aging Clocks
-Version: 1.1.0
+Version: 1.1.1
 Authors@R:
     person(
         "Payton", "Bock",
         email = "pbock@bu.edu",
         role = c("aut", "cre")
     )
-Description: Interpret linear-additive biological aging clocks by decomposing
-    the difference between predicted biological age and an age-conditioned
+Description: Interpret linear-additive aging clocks by decomposing
+    the difference between predicted age and an age-conditioned
     expected age into exact, per-feature contributions. ClockSHAP provides a
     closed-form SHAP-style decomposition for linear models using a baseline
     feature profile conditioned on chronological age.
